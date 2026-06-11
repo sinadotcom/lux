@@ -2,9 +2,9 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const BASE_POLAR = 0.96; // rad from vertical — the classic diorama angle
+const BASE_POLAR = 0.42; // rad from vertical — steep aerial / near top-down view
 const BASE_AZ = Math.PI * 0.25;
-const RADIUS_FACTOR = 2.7; // far enough that the whole board fits in a 38° fov
+const RADIUS_FACTOR = 3.0; // far enough that the whole board fits in a 38° fov from above
 
 /**
  * A fixed diorama camera framing the entire board. No drag, no dolly —
