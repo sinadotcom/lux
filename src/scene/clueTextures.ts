@@ -27,7 +27,8 @@ export function clueTexture(digit: number, look: ClueLook): THREE.CanvasTexture 
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.font = '300 64px "Helvetica Neue", Helvetica, Arial, sans-serif';
-  g.fillText(String(digit), size / 2, size / 2 + 2);
+  // A 0-clue forbids any adjacent core — read it as "keep away", so mark X.
+  g.fillText(digit === 0 ? 'X' : String(digit), size / 2, size / 2 + 2);
 
   if (look === 'satisfied') {
     g.lineWidth = 4;
