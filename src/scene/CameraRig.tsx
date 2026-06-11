@@ -2,13 +2,14 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const BASE_POLAR = 0.42; // rad from vertical — steep aerial / near top-down view
+const BASE_POLAR = 0.42; // rad from vertical — steep aerial view
 const BASE_AZ = Math.PI * 0.25;
-const RADIUS_FACTOR = 3.0; // far enough that the whole board fits in a 38° fov from above
 
 /**
- * A fixed diorama camera framing the entire board. No drag, no dolly —
- * the only motion is the one slow hero revolution on restoration.
+ * A fixed aerial camera that always frames the entire board regardless of
+ * screen orientation or size. Distance is computed from the viewport's
+ * narrower half-FOV each frame, so portrait mobile and landscape desktop
+ * both see the full grid.
  */
 export function CameraRig({
   boardExtent,
@@ -21,7 +22,7 @@ export function CameraRig({
   onCinematicEnd: () => void;
   reducedMotion: boolean;
 }) {
-  const { camera } = useThree();
+  const { camera, size } = useThree();
   const heroStart = useRef<number | null>(null);
   const heroDone = useRef(false);
   const lookAt = useRef(new THREE.Vector3(0, 0.2, 0));
@@ -53,11 +54,28 @@ export function CameraRig({
       }
     }
 
+    // Compute the camera distance so the board fits the screen on any
+    // orientation. We find the half-angle of the narrower viewport dimension
+    // and back out to fit the board's half-diagonal (boardExtent * √2).
+    const fovVrad = (camera as THREE.PerspectiveCamera).fov * (Math.PI / 180);
+    const aspect = size.width / size.height;
+    const halfV = fovVrad / 2;
+    const halfH = Math.atan(Math.tan(halfV) * aspect);
+    const halfMin = Math.min(halfV, halfH);
+
+    // Board half-diagonal + 18% padding so edges don't kiss the frustum edge.
+    // Divide by sin(halfMin) to get required camera-to-board distance.
+    const boardRadius = boardExtent * Math.SQRT2 * 1.18;
+    const r = boardRadius / Math.sin(halfMin) + heroLift * 0.4;
+
     const a = BASE_AZ + heroOffset;
-    const r = boardExtent * RADIUS_FACTOR + heroLift * 0.4;
     const polar = BASE_POLAR - (heroLift / boardExtent) * 0.12;
 
-    camera.position.set(r * Math.sin(polar) * Math.sin(a), r * Math.cos(polar) + heroLift * 0.3, r * Math.sin(polar) * Math.cos(a));
+    camera.position.set(
+      r * Math.sin(polar) * Math.sin(a),
+      r * Math.cos(polar) + heroLift * 0.3,
+      r * Math.sin(polar) * Math.cos(a),
+    );
     camera.lookAt(lookAt.current);
   });
 
