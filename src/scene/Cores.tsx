@@ -60,6 +60,7 @@ function Core({
   const group = useRef<THREE.Group>(null);
   const heart = useRef<THREE.Mesh>(null);
   const ring = useRef<THREE.Mesh>(null);
+  const light = useRef<THREE.PointLight>(null);
   const born = useRef(performance.now());
 
   useFrame(() => {
@@ -82,6 +83,18 @@ function Core({
       } else {
         const pulse = 1.25 + Math.sin(age * 2.2 + cell * 1.7) * 0.18;
         mat.color.copy(PALETTE.amber).multiplyScalar(pulse * (flagged ? 0.55 : 1));
+      }
+    }
+
+    // Real light spilling onto the street and nearby facades.
+    const l = light.current;
+    if (l) {
+      if (conflict) {
+        l.color.copy(CONFLICT_CB);
+        l.intensity = 0.5 + 0.2 * Math.abs(Math.sin(age * 9));
+      } else {
+        l.color.copy(PALETTE.amber);
+        l.intensity = (1.4 + Math.sin(age * 2.2 + cell * 1.7) * 0.25) * drop;
       }
     }
 
@@ -134,6 +147,8 @@ function Core({
         <cylinderGeometry args={[0.05, 0.09, 0.05, 16]} />
         <meshStandardMaterial color={PALETTE.graphite} roughness={0.4} metalness={0.8} />
       </mesh>
+      {/* Warm light pooling around the lantern */}
+      <pointLight ref={light} position={[0, 0.28, 0]} distance={2.8} decay={1.9} intensity={0} />
       {/* Landing / warning ring */}
       <mesh ref={ring} position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
         <ringGeometry args={[0.42, 0.47, 40]} />

@@ -10,6 +10,7 @@ import { Cores } from './Cores.tsx';
 import { Dust } from './Dust.tsx';
 import { cellPos } from './layout.ts';
 import { CELL, PALETTE } from './palette.ts';
+import { StreetProps } from './Props.tsx';
 import { Tiles } from './Tiles.tsx';
 import { useEnergyField } from './useEnergyField.ts';
 
@@ -29,7 +30,7 @@ export function CityScene() {
       camera={{ fov: 38, near: 0.1, far: 200 }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.05;
+        gl.toneMappingExposure = 1.12;
       }}
       style={{ position: 'absolute', inset: 0 }}
     >
@@ -91,6 +92,8 @@ function SceneContent() {
         shadow-camera-top={extent * 1.5}
         shadow-camera-bottom={-extent * 1.5}
       />
+      {/* Cool rim light from behind — separates silhouettes from the dark */}
+      <directionalLight position={[-6, 4, -7]} intensity={0.3} color="#46506a" />
       {/* One warm fill that swells with restoration */}
       <WarmFill energy={energyRef} extent={extent} />
 
@@ -103,6 +106,7 @@ function SceneContent() {
         highContrast={settings.colorblind}
       />
       <Buildings puzzle={puzzle} field={field} completion={completionRef} />
+      <StreetProps puzzle={puzzle} field={field} />
       <Cores
         puzzle={puzzle}
         cores={session.cores}
@@ -126,7 +130,7 @@ function SceneContent() {
 
       {!settings.reducedParticles && (
         <EffectComposer>
-          <Bloom mipmapBlur intensity={0.95} luminanceThreshold={0.55} luminanceSmoothing={0.3} />
+          <Bloom mipmapBlur intensity={1.25} luminanceThreshold={0.45} luminanceSmoothing={0.35} />
           <Vignette eskil={false} offset={0.18} darkness={0.78} />
         </EffectComposer>
       )}
@@ -149,12 +153,17 @@ function Plinth({ puzzle }: { puzzle: { width: number; height: number } }) {
   const d = puzzle.height * CELL + 0.7;
   return (
     <group>
-      <mesh position={[0, -0.42, 0]} receiveShadow>
-        <boxGeometry args={[w, 0.6, d]} />
+      {/* Sidewalk apron — the lighter concrete border around the streets */}
+      <mesh position={[0, -0.075, 0]} receiveShadow>
+        <boxGeometry args={[w, 0.13, d]} />
+        <meshStandardMaterial color={PALETTE.graphite} roughness={0.88} metalness={0.05} />
+      </mesh>
+      <mesh position={[0, -0.46, 0]} receiveShadow>
+        <boxGeometry args={[w - 0.12, 0.64, d - 0.12]} />
         <meshStandardMaterial color={PALETTE.charcoal} roughness={0.9} metalness={0.05} />
       </mesh>
       {/* Brushed-metal trim line */}
-      <mesh position={[0, -0.135, 0]}>
+      <mesh position={[0, -0.15, 0]}>
         <boxGeometry args={[w + 0.02, 0.025, d + 0.02]} />
         <meshStandardMaterial color={PALETTE.warmGrey} roughness={0.3} metalness={0.9} />
       </mesh>

@@ -30,6 +30,8 @@ export function Tiles({
   highContrast?: boolean;
 }) {
   const glowRef = useRef<THREE.InstancedMesh>(null);
+  const beamXRef = useRef<THREE.InstancedMesh>(null);
+  const beamZRef = useRef<THREE.InstancedMesh>(null);
 
   const openCells = useMemo(() => {
     const out: number[] = [];
@@ -50,16 +52,29 @@ export function Tiles({
   useFrame((state, dt) => {
     field.tick(performance.now(), dt, instant);
     const glow = glowRef.current;
-    if (!glow) return;
+    const bx = beamXRef.current;
+    const bz = beamZRef.current;
+    if (!glow || !bx || !bz) return;
     for (let k = 0; k < openCells.length; k++) {
       const level = field.levels[openCells[k]];
       // Warm energy ramp: charcoal -> ember -> amber, slightly over 1 for bloom.
       tmpColor.copy(PALETTE.charcoal).lerp(highContrast ? PALETTE.gold : PALETTE.amberDeep, Math.min(1, level * 1.15));
       if (level > 0.6) tmpColor.lerp(highContrast ? PALETTE.ivory : PALETTE.gold, (level - 0.6) * 0.7);
-      tmpColor.multiplyScalar(0.12 + (highContrast ? 1.9 : 1.55) * level);
+
+      // Soft full-tile wash, kept subtle so the beams carry the image.
+      tmpColor.multiplyScalar(0.08 + (highContrast ? 0.9 : 0.7) * level);
       glow.setColorAt(k, tmpColor);
+
+      // The beams — narrow strips of light running down the street centerline,
+      // like the energy paths in the moodboard. Pushed past 1.0 for the bloom.
+      tmpColor.copy(highContrast ? PALETTE.ivory : PALETTE.gold).lerp(PALETTE.amberDeep, highContrast ? 0 : 0.35);
+      tmpColor.multiplyScalar((highContrast ? 3.2 : 2.6) * level);
+      bx.setColorAt(k, tmpColor);
+      bz.setColorAt(k, tmpColor);
     }
     if (glow.instanceColor) glow.instanceColor.needsUpdate = true;
+    if (bx.instanceColor) bx.instanceColor.needsUpdate = true;
+    if (bz.instanceColor) bz.instanceColor.needsUpdate = true;
     void state;
   });
 
@@ -87,7 +102,7 @@ export function Tiles({
         <meshStandardMaterial color={PALETTE.graphite} roughness={0.92} metalness={0.05} />
       </instancedMesh>
 
-      {/* Energy faces */}
+      {/* Energy faces — soft tile wash */}
       <instancedMesh
         ref={glowRef}
         args={[undefined, undefined, openCells.length]}
@@ -95,7 +110,7 @@ export function Tiles({
           const m = new THREE.Matrix4();
           openCells.forEach((i, k) => {
             const [x, z] = cellPos(puzzle, i);
-            m.makeRotationX(-Math.PI / 2).setPosition(x, 0.005, z);
+            m.makeRotationX(-Math.PI / 2).setPosition(x, 0.004, z);
             mesh.setMatrixAt(k, m);
           });
           mesh.instanceMatrix.needsUpdate = true;
@@ -103,6 +118,42 @@ export function Tiles({
       >
         <planeGeometry args={[CELL * 0.84, CELL * 0.84]} />
         <meshBasicMaterial toneMapped={false} />
+      </instancedMesh>
+
+      {/* Energy beams along X */}
+      <instancedMesh
+        ref={beamXRef}
+        args={[undefined, undefined, openCells.length]}
+        onUpdate={(mesh) => {
+          const m = new THREE.Matrix4();
+          openCells.forEach((i, k) => {
+            const [x, z] = cellPos(puzzle, i);
+            m.makeRotationX(-Math.PI / 2).setPosition(x, 0.009, z);
+            mesh.setMatrixAt(k, m);
+          });
+          mesh.instanceMatrix.needsUpdate = true;
+        }}
+      >
+        <planeGeometry args={[CELL, 0.13]} />
+        <meshBasicMaterial toneMapped={false} transparent blending={THREE.AdditiveBlending} depthWrite={false} />
+      </instancedMesh>
+
+      {/* Energy beams along Z */}
+      <instancedMesh
+        ref={beamZRef}
+        args={[undefined, undefined, openCells.length]}
+        onUpdate={(mesh) => {
+          const m = new THREE.Matrix4();
+          openCells.forEach((i, k) => {
+            const [x, z] = cellPos(puzzle, i);
+            m.makeRotationX(-Math.PI / 2).setPosition(x, 0.009, z);
+            mesh.setMatrixAt(k, m);
+          });
+          mesh.instanceMatrix.needsUpdate = true;
+        }}
+      >
+        <planeGeometry args={[0.13, CELL]} />
+        <meshBasicMaterial toneMapped={false} transparent blending={THREE.AdditiveBlending} depthWrite={false} />
       </instancedMesh>
     </group>
   );
