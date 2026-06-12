@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const BASE_POLAR = 0.12; // rad from vertical — near top-down, so every tile is easy to tap
+const BASE_POLAR = 0.05; // rad from vertical — essentially straight top-down, flat grid
 const BASE_AZ = Math.PI * 0.25;
 
 /**
