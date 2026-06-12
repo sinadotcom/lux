@@ -18,6 +18,8 @@ interface WindowSpec {
   warmth: number;
 }
 
+type RoofProp = 'tank' | 'antenna' | 'ac' | 'vent' | null;
+
 interface BuildingSpec {
   cell: number;
   clue: boolean;
@@ -25,6 +27,10 @@ interface BuildingSpec {
   h: number;
   /** Optional setback box on top. */
   tower: { w: number; h: number; ox: number; oz: number } | null;
+  prop: RoofProp;
+  propOffset: [number, number];
+  /** Which facade carries the entrance (0..3); -1 for none. */
+  doorSide: number;
 }
 
 const tmp = new THREE.Color();
@@ -68,7 +74,18 @@ export function Buildings({
           }
         : null;
 
-      specs.push({ cell: i, clue, h, tower });
+      let prop: RoofProp = null;
+      if (!clue && !isTower) {
+        const pn = cellNoise(i, 46);
+        prop = pn > 0.72 ? 'tank' : pn > 0.5 ? 'antenna' : pn > 0.32 ? 'ac' : pn > 0.2 ? 'vent' : null;
+      }
+      const propOffset: [number, number] = [
+        (cellNoise(i, 47) - 0.5) * CELL * 0.4,
+        (cellNoise(i, 48) - 0.5) * CELL * 0.4,
+      ];
+      const doorSide = !clue && cellNoise(i, 49) > 0.35 ? Math.floor(cellNoise(i, 50) * 4) : -1;
+
+      specs.push({ cell: i, clue, h, tower, prop, propOffset, doorSide });
 
       // Window grids on every facade — dark until power arrives.
       if (!clue) {
@@ -180,21 +197,51 @@ export function Buildings({
               />
             </mesh>
 
-            {/* Setback box on top */}
-            {s.tower && (
-              <mesh position={[s.tower.ox, s.h + s.tower.h / 2, s.tower.oz]} castShadow>
-                <boxGeometry args={[s.tower.w, s.tower.h, s.tower.w]} />
-                <meshStandardMaterial
-                  map={tex.map}
-                  roughnessMap={tex.roughnessMap}
-                  normalMap={tex.normalMap}
-                  metalness={0.45}
-                />
+            {/* Parapet lip — a crisp dark edge on every roofline */}
+            <mesh position={[0, s.h + 0.011, 0]} castShadow>
+              <boxGeometry args={[CELL * 0.95, 0.022, CELL * 0.95]} />
+              <meshStandardMaterial color="#222328" roughness={0.55} metalness={0.6} />
+            </mesh>
+
+            {/* Facade ledge band on the taller masses */}
+            {!s.clue && s.h > 1.0 && (
+              <mesh position={[0, s.h * 0.52, 0]}>
+                <boxGeometry args={[CELL * 0.945, 0.014, CELL * 0.945]} />
+                <meshStandardMaterial color="#26272c" roughness={0.5} metalness={0.65} />
               </mesh>
             )}
 
+            {/* Street-level entrance: a recessed doorway with a thin lintel */}
+            {s.doorSide >= 0 && <Door side={s.doorSide} />}
+
+            {/* Setback box on top */}
+            {s.tower && (
+              <group position={[s.tower.ox, 0, s.tower.oz]}>
+                <mesh position={[0, s.h + s.tower.h / 2, 0]} castShadow>
+                  <boxGeometry args={[s.tower.w, s.tower.h, s.tower.w]} />
+                  <meshStandardMaterial
+                    map={tex.map}
+                    roughnessMap={tex.roughnessMap}
+                    normalMap={tex.normalMap}
+                    metalness={0.45}
+                  />
+                </mesh>
+                <mesh position={[0, s.h + s.tower.h + 0.009, 0]}>
+                  <boxGeometry args={[s.tower.w + 0.024, 0.018, s.tower.w + 0.024]} />
+                  <meshStandardMaterial color="#222328" roughness={0.55} metalness={0.6} />
+                </mesh>
+                {/* Mast on top of the tower */}
+                <mesh position={[0, s.h + s.tower.h + 0.12, 0]}>
+                  <cylinderGeometry args={[0.006, 0.016, 0.2, 6]} />
+                  <meshStandardMaterial color={PALETTE.warmGrey} roughness={0.35} metalness={0.85} />
+                </mesh>
+              </group>
+            )}
+
+            <RoofPropMesh spec={s} />
+
             {s.clue && (
-              <CluePlate digit={puzzle.cells[s.cell]} state={field.eval.clueState.get(s.cell) ?? 1} y={s.h + 0.015} />
+              <CluePlate digit={puzzle.cells[s.cell]} state={field.eval.clueState.get(s.cell) ?? 1} y={s.h + 0.024} />
             )}
           </group>
         );
@@ -218,6 +265,89 @@ export function Buildings({
         <planeGeometry args={[0.075, 0.105]} />
         <meshBasicMaterial toneMapped={false} side={THREE.DoubleSide} />
       </instancedMesh>
+    </group>
+  );
+}
+
+/** Recessed entrance at street level, with a brushed lintel above it. */
+function Door({ side }: { side: number }) {
+  const off = CELL * 0.46 + 0.002;
+  const pos: [number, number, number] =
+    side === 0 ? [off, 0.115, 0] : side === 1 ? [-off, 0.115, 0] : side === 2 ? [0, 0.115, off] : [0, 0.115, -off];
+  const rotY = side === 0 ? Math.PI / 2 : side === 1 ? -Math.PI / 2 : side === 2 ? 0 : Math.PI;
+  return (
+    <group position={pos} rotation={[0, rotY, 0]}>
+      <mesh>
+        <planeGeometry args={[0.16, 0.23]} />
+        <meshStandardMaterial color="#08080a" roughness={0.9} metalness={0.2} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[0, 0.13, 0.004]}>
+        <boxGeometry args={[0.2, 0.016, 0.02]} />
+        <meshStandardMaterial color={PALETTE.warmGrey} roughness={0.4} metalness={0.8} />
+      </mesh>
+    </group>
+  );
+}
+
+/** Rooftop furniture in dark metals: tanks, antennas, AC units, vents. */
+function RoofPropMesh({ spec }: { spec: BuildingSpec }) {
+  const { prop, propOffset, h } = spec;
+  if (!prop) return null;
+  const [ox, oz] = propOffset;
+
+  if (prop === 'tank') {
+    return (
+      <group position={[ox, h + 0.022, oz]}>
+        <mesh position={[0, 0.04, 0]} castShadow>
+          <cylinderGeometry args={[0.08, 0.08, 0.08, 12]} />
+          <meshStandardMaterial color="#2b2c31" roughness={0.5} metalness={0.7} />
+        </mesh>
+        <mesh position={[0, 0.092, 0]}>
+          <coneGeometry args={[0.085, 0.032, 12]} />
+          <meshStandardMaterial color="#222328" roughness={0.55} metalness={0.6} />
+        </mesh>
+      </group>
+    );
+  }
+  if (prop === 'antenna') {
+    return (
+      <group position={[ox, h + 0.022, oz]}>
+        <mesh position={[0, 0.13, 0]}>
+          <cylinderGeometry args={[0.007, 0.011, 0.26, 6]} />
+          <meshStandardMaterial color={PALETTE.warmGrey} roughness={0.4} metalness={0.8} />
+        </mesh>
+        <mesh position={[0, 0.05, 0]}>
+          <boxGeometry args={[0.05, 0.05, 0.05]} />
+          <meshStandardMaterial color="#2b2c31" roughness={0.5} metalness={0.7} />
+        </mesh>
+      </group>
+    );
+  }
+  if (prop === 'ac') {
+    return (
+      <group position={[ox, h + 0.022, oz]}>
+        <mesh position={[0, 0.032, 0]} castShadow>
+          <boxGeometry args={[0.12, 0.06, 0.095]} />
+          <meshStandardMaterial color="#2b2c31" roughness={0.5} metalness={0.7} />
+        </mesh>
+        <mesh position={[0.063, 0.032, 0]}>
+          <boxGeometry args={[0.006, 0.044, 0.07]} />
+          <meshStandardMaterial color={PALETTE.warmGrey} roughness={0.45} metalness={0.75} />
+        </mesh>
+      </group>
+    );
+  }
+  // vent — a short capped duct
+  return (
+    <group position={[ox, h + 0.022, oz]}>
+      <mesh position={[0, 0.045, 0]} castShadow>
+        <cylinderGeometry args={[0.032, 0.032, 0.09, 8]} />
+        <meshStandardMaterial color="#2b2c31" roughness={0.5} metalness={0.7} />
+      </mesh>
+      <mesh position={[0, 0.098, 0]}>
+        <cylinderGeometry args={[0.044, 0.044, 0.014, 8]} />
+        <meshStandardMaterial color={PALETTE.warmGrey} roughness={0.45} metalness={0.75} />
+      </mesh>
     </group>
   );
 }
