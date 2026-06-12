@@ -46,7 +46,6 @@ export function Buildings({
   completion: React.MutableRefObject<number>;
 }) {
   const windowsRef = useRef<THREE.InstancedMesh>(null);
-  const bodyMats = useRef(new Map<number, THREE.MeshStandardMaterial[]>());
   const tex = useMemo(() => paintedMetalTextures(), []);
 
   const { specs, windows } = useMemo(() => {
@@ -147,12 +146,6 @@ export function Buildings({
       nearby.set(s.cell, n ? sum / n : 0);
     }
 
-    // Box bodies breathe light as the power level around them rises.
-    for (const [cell, mats] of bodyMats.current) {
-      const level = Math.max(nearby.get(cell) ?? 0, done);
-      for (const m of mats) m.emissiveIntensity = level * 0.55;
-    }
-
     const mesh = windowsRef.current;
     if (!mesh) return;
     for (let k = 0; k < windows.length; k++) {
@@ -170,15 +163,6 @@ export function Buildings({
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   });
 
-  const registerMat = (cell: number) => (mat: THREE.MeshStandardMaterial | null) => {
-    if (!mat) return;
-    const list = bodyMats.current.get(cell) ?? [];
-    if (!list.includes(mat)) {
-      list.push(mat);
-      bodyMats.current.set(cell, list);
-    }
-  };
-
   return (
     <group>
       {specs.map((s) => {
@@ -189,13 +173,10 @@ export function Buildings({
             <mesh position={[0, s.h / 2, 0]} castShadow receiveShadow>
               <boxGeometry args={[CELL * 0.92, s.h, CELL * 0.92]} />
               <meshStandardMaterial
-                ref={registerMat(s.cell)}
                 map={tex.map}
                 roughnessMap={tex.roughnessMap}
                 normalMap={tex.normalMap}
                 metalness={0.45}
-                emissive={PALETTE.amber}
-                emissiveIntensity={0}
               />
             </mesh>
 
@@ -204,13 +185,10 @@ export function Buildings({
               <mesh position={[s.tower.ox, s.h + s.tower.h / 2, s.tower.oz]} castShadow>
                 <boxGeometry args={[s.tower.w, s.tower.h, s.tower.w]} />
                 <meshStandardMaterial
-                  ref={registerMat(s.cell)}
                   map={tex.map}
                   roughnessMap={tex.roughnessMap}
                   normalMap={tex.normalMap}
                   metalness={0.45}
-                  emissive={PALETTE.amber}
-                  emissiveIntensity={0}
                 />
               </mesh>
             )}
