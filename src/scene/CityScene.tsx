@@ -4,6 +4,7 @@ import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { audio } from '../audio/engine.ts';
 import { useLux } from '../state/store.ts';
+import { Atmosphere } from './Atmosphere.tsx';
 import { Buildings } from './Buildings.tsx';
 import { CameraRig } from './CameraRig.tsx';
 import { Cores } from './Cores.tsx';
@@ -58,6 +59,7 @@ function SceneContent() {
   // Overall restoration energy in [0,1]; drives dust, fog glow and audio.
   const energyRef = useRef(0);
   const completionRef = useRef(0);
+  const hemiRef = useRef<THREE.HemisphereLight>(null);
   const progress = field.eval.openCount ? field.eval.litCount / field.eval.openCount : 0;
 
   useEffect(() => {
@@ -81,7 +83,7 @@ function SceneContent() {
 
       {/* Gallery lighting: one soft warm-white key over a neutral ambient,
           like museum exhibition lighting on an architectural model. */}
-      <hemisphereLight args={['#3a3b3e', '#0a0a0b', 0.5]} />
+      <hemisphereLight ref={hemiRef} args={['#3a3b3e', '#0a0a0b', 0.5]} />
       <directionalLight
         position={[6, 9, 4]}
         intensity={0.75}
@@ -121,6 +123,13 @@ function SceneContent() {
 
       <Plinth puzzle={puzzle} energy={energyRef} />
       <Dust extent={extent * 1.4} energy={energyRef} reduced={settings.reducedParticles} />
+      <Atmosphere
+        extent={extent}
+        energy={energyRef}
+        hemi={hemiRef}
+        reducedParticles={settings.reducedParticles}
+        reducedMotion={settings.reducedMotion}
+      />
 
       <CameraRig
         boardExtent={extent}
