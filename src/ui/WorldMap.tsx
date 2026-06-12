@@ -26,7 +26,7 @@ export function WorldMap() {
   const dailyDone = progress.dailies.includes(todayKey());
 
   return (
-    <div className="screen" style={{ background: 'radial-gradient(ellipse 100% 80% at 50% 40%, #0e1015, #0a0b0e 75%)' }}>
+    <div className="screen" style={{ background: 'radial-gradient(ellipse 100% 80% at 50% 40%, #0b0b0d, #070708 75%)' }}>
       <svg className="map-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="list" aria-label="City districts">
         <defs>
           <radialGradient id="nodeGlow">

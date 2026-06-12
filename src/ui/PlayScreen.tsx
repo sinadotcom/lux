@@ -10,7 +10,7 @@ export function PlayScreen() {
   const session = useLux((s) => s.session);
   if (!session) return null;
   return (
-    <div className="screen" style={{ background: '#0a0b0e' }}>
+    <div className="screen" style={{ background: '#070708' }}>
       <CityScene />
       <Hud />
       {session.phase === 'cinematic' && (

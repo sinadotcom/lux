@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const BASE_POLAR = 0.42; // rad from vertical — steep aerial view
+const BASE_POLAR = 0.785; // rad from vertical — 45° elevation, three-quarter product shot
 const BASE_AZ = Math.PI * 0.25;
 
 /**
@@ -63,12 +63,14 @@ export function CameraRig({
     const halfH = Math.atan(Math.tan(halfV) * aspect);
     const halfMin = Math.min(halfV, halfH);
 
-    // Board half-diagonal + 18% padding so edges don't kiss the frustum edge.
+    // Board half-diagonal + padding so edges don't kiss the frustum edge.
     // Divide by sin(halfMin) to get required camera-to-board distance.
-    const boardRadius = boardExtent * Math.SQRT2 * 1.18;
+    const boardRadius = boardExtent * Math.SQRT2 * 1.24;
     const r = boardRadius / Math.sin(halfMin) + heroLift * 0.4;
 
-    const a = BASE_AZ + heroOffset;
+    // Slow orbital drift — luxury product turntable, barely perceptible.
+    const drift = reducedMotion ? 0 : Math.sin(t * 0.05) * 0.04;
+    const a = BASE_AZ + drift + heroOffset;
     const polar = BASE_POLAR - (heroLift / boardExtent) * 0.12;
 
     camera.position.set(

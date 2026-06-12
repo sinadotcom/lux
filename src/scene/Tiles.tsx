@@ -8,6 +8,26 @@ import type { EnergyField } from './useEnergyField.ts';
 
 const tmpColor = new THREE.Color();
 
+let beamTex: THREE.CanvasTexture | null = null;
+/** Soft cross-fade alpha across the strip — light embedded in architecture, not a laser. */
+function beamTexture(): THREE.CanvasTexture {
+  if (beamTex) return beamTex;
+  const c = document.createElement('canvas');
+  c.width = 4;
+  c.height = 64;
+  const g = c.getContext('2d')!;
+  const grad = g.createLinearGradient(0, 0, 0, 64);
+  grad.addColorStop(0, 'rgba(255,255,255,0)');
+  grad.addColorStop(0.35, 'rgba(255,255,255,0.9)');
+  grad.addColorStop(0.5, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.65, 'rgba(255,255,255,0.9)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 4, 64);
+  beamTex = new THREE.CanvasTexture(c);
+  return beamTex;
+}
+
 /**
  * The street grid. Two instanced layers: concrete tile bodies, and an
  * additive "energy" face on top whose color animates with the power field —
@@ -65,10 +85,10 @@ export function Tiles({
       tmpColor.multiplyScalar(0.08 + (highContrast ? 0.9 : 0.7) * level);
       glow.setColorAt(k, tmpColor);
 
-      // The beams — narrow strips of light running down the street centerline,
-      // like the energy paths in the moodboard. Pushed past 1.0 for the bloom.
+      // The beams — soft illuminated paths down the street centerline. Warm,
+      // diffused, nudged past 1.0 so the bloom lifts them gently.
       tmpColor.copy(highContrast ? PALETTE.ivory : PALETTE.gold).lerp(PALETTE.amberDeep, highContrast ? 0 : 0.35);
-      tmpColor.multiplyScalar((highContrast ? 3.2 : 2.6) * level);
+      tmpColor.multiplyScalar((highContrast ? 2.6 : 2.0) * level);
       bx.setColorAt(k, tmpColor);
       bz.setColorAt(k, tmpColor);
     }
@@ -134,26 +154,27 @@ export function Tiles({
           mesh.instanceMatrix.needsUpdate = true;
         }}
       >
-        <planeGeometry args={[CELL, 0.13]} />
-        <meshBasicMaterial toneMapped={false} transparent blending={THREE.AdditiveBlending} depthWrite={false} />
+        <planeGeometry args={[CELL, 0.2]} />
+        <meshBasicMaterial map={beamTexture()} toneMapped={false} transparent blending={THREE.AdditiveBlending} depthWrite={false} />
       </instancedMesh>
 
-      {/* Energy beams along Z */}
+      {/* Energy beams along Z — same soft strip, rotated a quarter turn */}
       <instancedMesh
         ref={beamZRef}
         args={[undefined, undefined, openCells.length]}
         onUpdate={(mesh) => {
           const m = new THREE.Matrix4();
+          const ry = new THREE.Matrix4().makeRotationY(Math.PI / 2);
           openCells.forEach((i, k) => {
             const [x, z] = cellPos(puzzle, i);
-            m.makeRotationX(-Math.PI / 2).setPosition(x, 0.009, z);
+            m.makeRotationX(-Math.PI / 2).premultiply(ry).setPosition(x, 0.009, z);
             mesh.setMatrixAt(k, m);
           });
           mesh.instanceMatrix.needsUpdate = true;
         }}
       >
-        <planeGeometry args={[0.13, CELL]} />
-        <meshBasicMaterial toneMapped={false} transparent blending={THREE.AdditiveBlending} depthWrite={false} />
+        <planeGeometry args={[CELL, 0.2]} />
+        <meshBasicMaterial map={beamTexture()} toneMapped={false} transparent blending={THREE.AdditiveBlending} depthWrite={false} />
       </instancedMesh>
     </group>
   );

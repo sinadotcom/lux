@@ -34,7 +34,7 @@ export function CityScene() {
       }}
       style={{ position: 'absolute', inset: 0 }}
     >
-      <color attach="background" args={['#0a0b0e']} />
+      <color attach="background" args={['#070708']} />
       <Suspense fallback={null}>
         <SceneContent />
       </Suspense>
@@ -77,14 +77,15 @@ function SceneContent() {
 
   return (
     <group>
-      <fog attach="fog" args={['#0a0b0e', extent * 2.2, extent * 7]} />
+      <fog attach="fog" args={['#070708', extent * 2.2, extent * 7]} />
 
-      {/* Lighting: cool, soft moonlight world; the warmth comes from energy. */}
-      <hemisphereLight args={['#2a3140', '#0c0d10', 0.65]} />
+      {/* Gallery lighting: one soft warm-white key over a neutral ambient,
+          like museum exhibition lighting on an architectural model. */}
+      <hemisphereLight args={['#3a3b3e', '#0a0a0b', 0.5]} />
       <directionalLight
         position={[6, 9, 4]}
-        intensity={0.55}
-        color="#aebbd0"
+        intensity={0.75}
+        color="#f0ebe0"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-extent * 1.5}
@@ -92,8 +93,8 @@ function SceneContent() {
         shadow-camera-top={extent * 1.5}
         shadow-camera-bottom={-extent * 1.5}
       />
-      {/* Cool rim light from behind — separates silhouettes from the dark */}
-      <directionalLight position={[-6, 4, -7]} intensity={0.3} color="#46506a" />
+      {/* Soft rim light from behind — separates silhouettes from the dark */}
+      <directionalLight position={[-6, 4, -7]} intensity={0.22} color="#5a5e68" />
       {/* One warm fill that swells with restoration */}
       <WarmFill energy={energyRef} extent={extent} />
 
@@ -153,10 +154,10 @@ function Plinth({ puzzle }: { puzzle: { width: number; height: number } }) {
   const d = puzzle.height * CELL + 0.7;
   return (
     <group>
-      {/* Sidewalk apron — the lighter concrete border around the streets */}
+      {/* Sidewalk apron — light concrete border, the museum pedestal top */}
       <mesh position={[0, -0.075, 0]} receiveShadow>
         <boxGeometry args={[w, 0.13, d]} />
-        <meshStandardMaterial color={PALETTE.graphite} roughness={0.88} metalness={0.05} />
+        <meshStandardMaterial color={PALETTE.lightConcrete} roughness={0.9} metalness={0} />
       </mesh>
       <mesh position={[0, -0.46, 0]} receiveShadow>
         <boxGeometry args={[w - 0.12, 0.64, d - 0.12]} />

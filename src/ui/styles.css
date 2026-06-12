@@ -1,7 +1,7 @@
 /* LUX design system — charcoal world, ivory type, amber energy. */
 
 :root {
-  --night: #0a0b0e;
+  --night: #070708;
   --charcoal: #15171c;
   --graphite: #23262d;
   --line: rgba(232, 228, 218, 0.14);
@@ -11,7 +11,7 @@
   --ivory-faint: rgba(232, 228, 218, 0.32);
   --amber: #ffb454;
   --gold: #ffd9a0;
-  --font: 'Helvetica Neue', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --font: 'Inter', -apple-system, 'SF Pro Text', 'Helvetica Neue', 'Segoe UI', Helvetica, Arial, sans-serif;
 }
 
 * {

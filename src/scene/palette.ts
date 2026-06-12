@@ -1,11 +1,15 @@
 import * as THREE from 'three';
 
-/** Approved palette — charcoal world, amber energy. Nothing saturated. */
+/** Approved palette — gallery darkness, ceramic architecture, amber energy. */
 export const PALETTE = {
-  night: new THREE.Color('#0a0b0e'),
+  night: new THREE.Color('#070708'),
   charcoal: new THREE.Color('#15171c'),
   graphite: new THREE.Color('#23262d'),
   concrete: new THREE.Color('#3a3e46'),
+  /** Off-white ceramic — the architectural model material from the moodboard. */
+  ceramic: new THREE.Color('#cfcbc1'),
+  /** Light concrete for plinth/sidewalk surfaces. */
+  lightConcrete: new THREE.Color('#8f8c84'),
   warmGrey: new THREE.Color('#6b6760'),
   ivory: new THREE.Color('#e8e4da'),
   amber: new THREE.Color('#ffb454'),

@@ -184,20 +184,24 @@ export function Buildings({
         const [x, z] = cellPos(puzzle, s.cell);
         return (
           <group key={s.cell} position={[x, 0, z]}>
-            {/* Base mass */}
+            {/* Base mass — matte off-white ceramic, like a physical model piece */}
             <mesh position={[0, s.h / 2, 0]} castShadow receiveShadow>
               <boxGeometry args={[CELL * 0.92, s.h, CELL * 0.92]} />
               <meshStandardMaterial
-                color={s.clue ? PALETTE.charcoal : PALETTE.concrete}
-                roughness={0.82}
-                metalness={s.clue ? 0.25 : 0.08}
+                color={s.clue ? PALETTE.graphite : PALETTE.ceramic}
+                roughness={s.clue ? 0.7 : 0.92}
+                metalness={s.clue ? 0.3 : 0}
               />
             </mesh>
 
             {/* Parapet lip — gives every roofline a crisp edge under the bloom */}
             <mesh position={[0, s.h + 0.012, 0]} castShadow>
               <boxGeometry args={[CELL * 0.96, 0.024, CELL * 0.96]} />
-              <meshStandardMaterial color={s.clue ? PALETTE.graphite : PALETTE.warmGrey} roughness={0.6} metalness={0.15} />
+              <meshStandardMaterial
+                color={s.clue ? PALETTE.charcoal : PALETTE.ivory}
+                roughness={s.clue ? 0.65 : 0.85}
+                metalness={s.clue ? 0.25 : 0}
+              />
             </mesh>
 
             {/* Setback tower */}
@@ -205,11 +209,11 @@ export function Buildings({
               <group position={[s.tower.ox, 0, s.tower.oz]}>
                 <mesh position={[0, s.h + s.tower.h / 2, 0]} castShadow>
                   <boxGeometry args={[s.tower.w, s.tower.h, s.tower.w]} />
-                  <meshStandardMaterial color={PALETTE.concrete} roughness={0.8} metalness={0.1} />
+                  <meshStandardMaterial color={PALETTE.ceramic} roughness={0.92} metalness={0} />
                 </mesh>
                 <mesh position={[0, s.h + s.tower.h + 0.01, 0]}>
                   <boxGeometry args={[s.tower.w + 0.03, 0.02, s.tower.w + 0.03]} />
-                  <meshStandardMaterial color={PALETTE.warmGrey} roughness={0.55} metalness={0.2} />
+                  <meshStandardMaterial color={PALETTE.ivory} roughness={0.85} metalness={0} />
                 </mesh>
               </group>
             )}
@@ -257,49 +261,37 @@ function RoofProp({ spec }: { spec: BuildingSpec }) {
       <group position={[ox, h + 0.024, oz]}>
         <mesh position={[0, 0.035, 0]} castShadow>
           <cylinderGeometry args={[0.085, 0.085, 0.07, 12]} />
-          <meshStandardMaterial color={PALETTE.warmGrey} roughness={0.5} metalness={0.6} />
+          <meshStandardMaterial color={PALETTE.ceramic} roughness={0.9} metalness={0} />
         </mesh>
         <mesh position={[0, 0.082, 0]}>
           <coneGeometry args={[0.09, 0.035, 12]} />
-          <meshStandardMaterial color={PALETTE.graphite} roughness={0.6} metalness={0.4} />
+          <meshStandardMaterial color={PALETTE.ivory} roughness={0.85} metalness={0} />
         </mesh>
       </group>
     );
   }
   if (prop === 'antenna') {
     return (
-      <group position={[ox, h + 0.024, oz]}>
-        <mesh position={[0, 0.14, 0]}>
-          <cylinderGeometry args={[0.008, 0.012, 0.28, 6]} />
-          <meshStandardMaterial color={PALETTE.graphite} roughness={0.4} metalness={0.8} />
-        </mesh>
-        <mesh position={[0, 0.285, 0]}>
-          <sphereGeometry args={[0.014, 8, 6]} />
-          <meshBasicMaterial color={PALETTE.ember} toneMapped={false} />
-        </mesh>
-      </group>
+      <mesh position={[ox, h + 0.164, oz]}>
+        <cylinderGeometry args={[0.008, 0.012, 0.28, 6]} />
+        <meshStandardMaterial color={PALETTE.warmGrey} roughness={0.4} metalness={0.7} />
+      </mesh>
     );
   }
   if (prop === 'ac') {
     return (
       <mesh position={[ox, h + 0.055, oz]} castShadow>
         <boxGeometry args={[0.13, 0.065, 0.1]} />
-        <meshStandardMaterial color={PALETTE.graphite} roughness={0.55} metalness={0.5} />
+        <meshStandardMaterial color={PALETTE.ceramic} roughness={0.9} metalness={0} />
       </mesh>
     );
   }
-  // spire — sits on top of the tower
+  // spire — a plain mast on top of the tower, no glowing tip
   return (
-    <group position={[tower ? tower.ox : 0, top + 0.01, tower ? tower.oz : 0]}>
-      <mesh position={[0, 0.1, 0]}>
-        <cylinderGeometry args={[0.006, 0.018, 0.2, 6]} />
-        <meshStandardMaterial color={PALETTE.warmGrey} roughness={0.35} metalness={0.85} />
-      </mesh>
-      <mesh position={[0, 0.21, 0]}>
-        <sphereGeometry args={[0.013, 8, 6]} />
-        <meshBasicMaterial color={PALETTE.gold} toneMapped={false} />
-      </mesh>
-    </group>
+    <mesh position={[tower ? tower.ox : 0, top + 0.11, tower ? tower.oz : 0]}>
+      <cylinderGeometry args={[0.006, 0.018, 0.2, 6]} />
+      <meshStandardMaterial color={PALETTE.warmGrey} roughness={0.35} metalness={0.85} />
+    </mesh>
   );
 }
 
