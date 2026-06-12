@@ -6,6 +6,7 @@ import { OPEN, type Puzzle } from '../game/types.ts';
 import { clueTexture, type ClueLook } from './clueTextures.ts';
 import { cellNoise, cellPos } from './layout.ts';
 import { CELL, PALETTE } from './palette.ts';
+import { paintedMetalTextures } from './metalTexture.ts';
 import type { EnergyField } from './useEnergyField.ts';
 
 interface WindowSpec {
@@ -17,27 +18,22 @@ interface WindowSpec {
   warmth: number;
 }
 
-type RoofProp = 'tank' | 'antenna' | 'ac' | 'spire' | null;
-
 interface BuildingSpec {
   cell: number;
   clue: boolean;
   /** Base mass height. */
   h: number;
-  /** Optional setback tower on top (moodboard towers). */
+  /** Optional setback box on top. */
   tower: { w: number; h: number; ox: number; oz: number } | null;
-  prop: RoofProp;
-  propOffset: [number, number];
 }
 
 const tmp = new THREE.Color();
-const WINDOW_OFF = new THREE.Color('#101216');
+const WINDOW_OFF = new THREE.Color('#0a0a0c');
 
 /**
- * Structures. Numbered ones are low dark plinths carrying a requirement
- * plate; the rest are layered city masses — setback towers, parapets, water
- * tanks, antennas — with window grids that wake as power reaches the streets
- * around them. This is the "city reacts" layer.
+ * Structures: plain matte-black painted-metal boxes. As power reaches the
+ * streets around a box it starts to emit — first a faint amber breath, then
+ * windows wake one by one. Numbered boxes carry the requirement plate.
  */
 export function Buildings({
   puzzle,
@@ -50,6 +46,8 @@ export function Buildings({
   completion: React.MutableRefObject<number>;
 }) {
   const windowsRef = useRef<THREE.InstancedMesh>(null);
+  const bodyMats = useRef(new Map<number, THREE.MeshStandardMaterial[]>());
+  const tex = useMemo(() => paintedMetalTextures(), []);
 
   const { specs, windows } = useMemo(() => {
     const specs: BuildingSpec[] = [];
@@ -71,20 +69,9 @@ export function Buildings({
           }
         : null;
 
-      let prop: RoofProp = null;
-      if (!clue) {
-        const pn = cellNoise(i, 46);
-        prop = isTower ? 'spire' : pn > 0.75 ? 'tank' : pn > 0.5 ? 'antenna' : pn > 0.3 ? 'ac' : null;
-      }
-      const propOffset: [number, number] = [
-        (cellNoise(i, 47) - 0.5) * CELL * 0.4,
-        (cellNoise(i, 48) - 0.5) * CELL * 0.4,
-      ];
+      specs.push({ cell: i, clue, h, tower });
 
-      specs.push({ cell: i, clue, h, tower, prop, propOffset });
-
-      // Regular window grids on every facade of the base mass — the moodboard
-      // buildings read as real architecture because their windows align.
+      // Window grids on every facade — dark until power arrives.
       if (!clue) {
         const [cx, cz] = cellPos(puzzle, i);
         const floors = Math.max(1, Math.floor((h - 0.18) / 0.21));
@@ -114,7 +101,6 @@ export function Buildings({
               });
             }
           }
-          // Tower windows: a narrow column of lights.
           if (tower) {
             const tFloors = Math.max(1, Math.floor((tower.h - 0.1) / 0.21));
             for (let f = 0; f < tFloors; f++) {
@@ -145,8 +131,6 @@ export function Buildings({
   }, [puzzle]);
 
   useFrame(() => {
-    const mesh = windowsRef.current;
-    if (!mesh) return;
     const done = completion.current;
 
     // Mean street power around each building, computed once per frame.
@@ -163,6 +147,14 @@ export function Buildings({
       nearby.set(s.cell, n ? sum / n : 0);
     }
 
+    // Box bodies breathe light as the power level around them rises.
+    for (const [cell, mats] of bodyMats.current) {
+      const level = Math.max(nearby.get(cell) ?? 0, done);
+      for (const m of mats) m.emissiveIntensity = level * 0.55;
+    }
+
+    const mesh = windowsRef.current;
+    if (!mesh) return;
     for (let k = 0; k < windows.length; k++) {
       const w = windows[k];
       const level = nearby.get(w.building) ?? 0;
@@ -178,50 +170,53 @@ export function Buildings({
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   });
 
+  const registerMat = (cell: number) => (mat: THREE.MeshStandardMaterial | null) => {
+    if (!mat) return;
+    const list = bodyMats.current.get(cell) ?? [];
+    if (!list.includes(mat)) {
+      list.push(mat);
+      bodyMats.current.set(cell, list);
+    }
+  };
+
   return (
     <group>
       {specs.map((s) => {
         const [x, z] = cellPos(puzzle, s.cell);
         return (
           <group key={s.cell} position={[x, 0, z]}>
-            {/* Base mass — matte off-white ceramic, like a physical model piece */}
+            {/* Black painted-metal box */}
             <mesh position={[0, s.h / 2, 0]} castShadow receiveShadow>
               <boxGeometry args={[CELL * 0.92, s.h, CELL * 0.92]} />
               <meshStandardMaterial
-                color={s.clue ? PALETTE.graphite : PALETTE.ceramic}
-                roughness={s.clue ? 0.7 : 0.92}
-                metalness={s.clue ? 0.3 : 0}
+                ref={registerMat(s.cell)}
+                map={tex.map}
+                roughnessMap={tex.roughnessMap}
+                normalMap={tex.normalMap}
+                metalness={0.45}
+                emissive={PALETTE.amber}
+                emissiveIntensity={0}
               />
             </mesh>
 
-            {/* Parapet lip — gives every roofline a crisp edge under the bloom */}
-            <mesh position={[0, s.h + 0.012, 0]} castShadow>
-              <boxGeometry args={[CELL * 0.96, 0.024, CELL * 0.96]} />
-              <meshStandardMaterial
-                color={s.clue ? PALETTE.charcoal : PALETTE.ivory}
-                roughness={s.clue ? 0.65 : 0.85}
-                metalness={s.clue ? 0.25 : 0}
-              />
-            </mesh>
-
-            {/* Setback tower */}
+            {/* Setback box on top */}
             {s.tower && (
-              <group position={[s.tower.ox, 0, s.tower.oz]}>
-                <mesh position={[0, s.h + s.tower.h / 2, 0]} castShadow>
-                  <boxGeometry args={[s.tower.w, s.tower.h, s.tower.w]} />
-                  <meshStandardMaterial color={PALETTE.ceramic} roughness={0.92} metalness={0} />
-                </mesh>
-                <mesh position={[0, s.h + s.tower.h + 0.01, 0]}>
-                  <boxGeometry args={[s.tower.w + 0.03, 0.02, s.tower.w + 0.03]} />
-                  <meshStandardMaterial color={PALETTE.ivory} roughness={0.85} metalness={0} />
-                </mesh>
-              </group>
+              <mesh position={[s.tower.ox, s.h + s.tower.h / 2, s.tower.oz]} castShadow>
+                <boxGeometry args={[s.tower.w, s.tower.h, s.tower.w]} />
+                <meshStandardMaterial
+                  ref={registerMat(s.cell)}
+                  map={tex.map}
+                  roughnessMap={tex.roughnessMap}
+                  normalMap={tex.normalMap}
+                  metalness={0.45}
+                  emissive={PALETTE.amber}
+                  emissiveIntensity={0}
+                />
+              </mesh>
             )}
 
-            <RoofProp spec={s} />
-
             {s.clue && (
-              <CluePlate digit={puzzle.cells[s.cell]} state={field.eval.clueState.get(s.cell) ?? 1} y={s.h + 0.028} />
+              <CluePlate digit={puzzle.cells[s.cell]} state={field.eval.clueState.get(s.cell) ?? 1} y={s.h + 0.015} />
             )}
           </group>
         );
@@ -246,52 +241,6 @@ export function Buildings({
         <meshBasicMaterial toneMapped={false} side={THREE.DoubleSide} />
       </instancedMesh>
     </group>
-  );
-}
-
-/** Rooftop furniture: water tanks, antenna masts, AC units, tower spires. */
-function RoofProp({ spec }: { spec: BuildingSpec }) {
-  const { prop, propOffset, h, tower } = spec;
-  if (!prop) return null;
-  const [ox, oz] = propOffset;
-  const top = tower ? h + tower.h : h;
-
-  if (prop === 'tank') {
-    return (
-      <group position={[ox, h + 0.024, oz]}>
-        <mesh position={[0, 0.035, 0]} castShadow>
-          <cylinderGeometry args={[0.085, 0.085, 0.07, 12]} />
-          <meshStandardMaterial color={PALETTE.ceramic} roughness={0.9} metalness={0} />
-        </mesh>
-        <mesh position={[0, 0.082, 0]}>
-          <coneGeometry args={[0.09, 0.035, 12]} />
-          <meshStandardMaterial color={PALETTE.ivory} roughness={0.85} metalness={0} />
-        </mesh>
-      </group>
-    );
-  }
-  if (prop === 'antenna') {
-    return (
-      <mesh position={[ox, h + 0.164, oz]}>
-        <cylinderGeometry args={[0.008, 0.012, 0.28, 6]} />
-        <meshStandardMaterial color={PALETTE.warmGrey} roughness={0.4} metalness={0.7} />
-      </mesh>
-    );
-  }
-  if (prop === 'ac') {
-    return (
-      <mesh position={[ox, h + 0.055, oz]} castShadow>
-        <boxGeometry args={[0.13, 0.065, 0.1]} />
-        <meshStandardMaterial color={PALETTE.ceramic} roughness={0.9} metalness={0} />
-      </mesh>
-    );
-  }
-  // spire — a plain mast on top of the tower, no glowing tip
-  return (
-    <mesh position={[tower ? tower.ox : 0, top + 0.11, tower ? tower.oz : 0]}>
-      <cylinderGeometry args={[0.006, 0.018, 0.2, 6]} />
-      <meshStandardMaterial color={PALETTE.warmGrey} roughness={0.35} metalness={0.85} />
-    </mesh>
   );
 }
 
