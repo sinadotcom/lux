@@ -197,6 +197,12 @@ export const useLux = create<LuxState>()(
       if (session.puzzle.cells[cell] !== -1) return;
 
       const had = session.cores.includes(cell);
+      // Placing is only allowed on dark ground. A cell already lit by another
+      // core can't take a second core — to clear it you tap the core itself.
+      if (!had) {
+        const lit = evaluate(session.puzzle, new Set(session.cores)).lit;
+        if (lit[cell]) return;
+      }
       const cores = had ? session.cores.filter((c) => c !== cell) : [...session.cores, cell];
       const next: Session = {
         ...session,

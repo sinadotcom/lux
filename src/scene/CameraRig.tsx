@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const BASE_POLAR = 0.785; // rad from vertical — 45° elevation, three-quarter product shot
+const BASE_POLAR = 0.12; // rad from vertical — near top-down, so every tile is easy to tap
 const BASE_AZ = Math.PI * 0.25;
 
 /**
@@ -68,9 +68,7 @@ export function CameraRig({
     const boardRadius = boardExtent * Math.SQRT2 * 1.24;
     const r = boardRadius / Math.sin(halfMin) + heroLift * 0.4;
 
-    // Slow orbital drift — luxury product turntable, barely perceptible.
-    const drift = reducedMotion ? 0 : Math.sin(t * 0.05) * 0.04;
-    const a = BASE_AZ + drift + heroOffset;
+    const a = BASE_AZ + heroOffset;
     const polar = BASE_POLAR - (heroLift / boardExtent) * 0.12;
 
     camera.position.set(
