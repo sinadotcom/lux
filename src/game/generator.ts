@@ -13,10 +13,10 @@ export interface GeneratorOptions {
 }
 
 export const DIFFICULTY_PRESETS: Record<'gentle' | 'steady' | 'demanding' | 'master', GeneratorOptions> = {
-  gentle: { width: 6, height: 6, wallDensity: 0.24, clueFraction: 0.9 },
-  steady: { width: 7, height: 7, wallDensity: 0.22, clueFraction: 0.7 },
-  demanding: { width: 8, height: 8, wallDensity: 0.2, clueFraction: 0.55 },
-  master: { width: 10, height: 10, wallDensity: 0.19, clueFraction: 0.45 },
+  gentle: { width: 6, height: 6, wallDensity: 0.3, clueFraction: 0.9 },
+  steady: { width: 7, height: 7, wallDensity: 0.28, clueFraction: 0.7 },
+  demanding: { width: 8, height: 8, wallDensity: 0.26, clueFraction: 0.55 },
+  master: { width: 10, height: 10, wallDensity: 0.24, clueFraction: 0.45 },
 };
 
 /**

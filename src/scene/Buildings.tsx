@@ -112,7 +112,7 @@ export function Buildings({
                 building: i,
                 position: pos,
                 rotationY: side === 0 ? Math.PI / 2 : side === 1 ? -Math.PI / 2 : side === 2 ? 0 : Math.PI,
-                threshold: 0.2 + cellNoise(i, 200 + side * 31 + f * 11 + c) * 0.65,
+                threshold: 0.12 + cellNoise(i, 200 + side * 31 + f * 11 + c) * 0.45,
                 warmth: 0.65 + cellNoise(i, 300 + side * 13 + f * 5 + c) * 0.35,
               });
             }
@@ -135,7 +135,7 @@ export function Buildings({
                 building: i,
                 position: pos,
                 rotationY: side === 0 ? Math.PI / 2 : side === 1 ? -Math.PI / 2 : side === 2 ? 0 : Math.PI,
-                threshold: 0.2 + cellNoise(i, 500 + side * 23 + f) * 0.65,
+                threshold: 0.12 + cellNoise(i, 500 + side * 23 + f) * 0.45,
                 warmth: 0.65 + cellNoise(i, 600 + side * 29 + f) * 0.35,
               });
             }
@@ -149,18 +149,15 @@ export function Buildings({
   useFrame(() => {
     const done = completion.current;
 
-    // Mean street power around each building, computed once per frame.
+    // Peak street power around each building, computed once per frame — one
+    // powered street is enough to bring a building to life.
     const nearby = new Map<number, number>();
     for (const s of specs) {
-      let sum = 0;
-      let n = 0;
+      let peak = 0;
       for (const nb of orthNeighbors(puzzle, s.cell)) {
-        if (puzzle.cells[nb] === OPEN) {
-          sum += field.levels[nb];
-          n++;
-        }
+        if (puzzle.cells[nb] === OPEN) peak = Math.max(peak, field.levels[nb]);
       }
-      nearby.set(s.cell, n ? sum / n : 0);
+      nearby.set(s.cell, peak);
     }
 
     const mesh = windowsRef.current;

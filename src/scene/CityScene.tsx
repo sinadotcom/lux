@@ -119,7 +119,7 @@ function SceneContent() {
       {hovered != null && playing && !session.cores.includes(hovered) && <HoverGhost puzzle={puzzle} cell={hovered} />}
       {cursor != null && playing && <CursorMarker puzzle={puzzle} cell={cursor} />}
 
-      <Plinth puzzle={puzzle} />
+      <Plinth puzzle={puzzle} energy={energyRef} />
       <Dust extent={extent * 1.4} energy={energyRef} reduced={settings.reducedParticles} />
 
       <CameraRig
@@ -149,9 +149,21 @@ function WarmFill({ energy, extent }: { energy: React.MutableRefObject<number>; 
 }
 
 /** The concrete slab the district rests on — the diorama base from the moodboard. */
-function Plinth({ puzzle }: { puzzle: { width: number; height: number } }) {
+function Plinth({ puzzle, energy }: { puzzle: { width: number; height: number }; energy: React.MutableRefObject<number> }) {
   const w = puzzle.width * CELL + 0.7;
   const d = puzzle.height * CELL + 0.7;
+  const glowMat = useRef<THREE.MeshBasicMaterial>(null);
+
+  // The slab's edge band charges up with the city: dark at rest, then a warm
+  // amber line wrapping the whole board as power returns.
+  useFrame(({ clock }) => {
+    const m = glowMat.current;
+    if (!m) return;
+    const e = energy.current;
+    const breathe = 1 + Math.sin(clock.elapsedTime * 1.1) * 0.08 * e;
+    m.color.copy(PALETTE.amber).multiplyScalar(0.04 + e * 1.9 * breathe);
+  });
+
   return (
     <group>
       {/* Sidewalk apron — light concrete border, the museum pedestal top */}
@@ -167,6 +179,11 @@ function Plinth({ puzzle }: { puzzle: { width: number; height: number } }) {
       <mesh position={[0, -0.15, 0]}>
         <boxGeometry args={[w + 0.02, 0.025, d + 0.02]} />
         <meshStandardMaterial color={PALETTE.warmGrey} roughness={0.3} metalness={0.9} />
+      </mesh>
+      {/* Energy band — the board's sides glow as the power level rises */}
+      <mesh position={[0, -0.19, 0]}>
+        <boxGeometry args={[w + 0.026, 0.04, d + 0.026]} />
+        <meshBasicMaterial ref={glowMat} toneMapped={false} transparent opacity={0.95} depthWrite={false} />
       </mesh>
       {/* Faint under-glow, as if the slab floats on stored energy */}
       <mesh position={[0, -0.78, 0]} rotation={[-Math.PI / 2, 0, 0]}>
