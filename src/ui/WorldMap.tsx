@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { audio } from '../audio/engine.ts';
 import { DISTRICTS, DISTRICT_BY_ID } from '../game/districts.ts';
 import { todayKey } from '../game/daily.ts';
-import { completionPercent, useLux, visibleDistricts } from '../state/store.ts';
+import { cityComplete, completionPercent, useLux, visibleDistricts } from '../state/store.ts';
 
 const W = 1000;
 const H = 700;
@@ -20,10 +21,16 @@ export function WorldMap() {
   const startDistrict = useLux((s) => s.startDistrict);
   const startDaily = useLux((s) => s.startDaily);
   const setScreen = useLux((s) => s.setScreen);
+  const markFinaleSeen = useLux((s) => s.markFinaleSeen);
 
   const visible = visibleDistricts(progress);
   const pct = completionPercent(progress);
+  const complete = cityComplete(progress);
   const dailyDone = progress.dailies.includes(todayKey());
+
+  // The grand finale plays once, the first time the player returns to a fully
+  // restored city; afterwards the map simply stays lit.
+  const [showFinale, setShowFinale] = useState(complete && !progress.finaleSeen);
 
   return (
     <div className="screen" style={{ background: 'radial-gradient(ellipse 100% 80% at 50% 40%, #0b0b0d, #070708 75%)' }}>
@@ -47,8 +54,8 @@ export function WorldMap() {
                 <line
                   key={`${d.id}-${u}`}
                   x1={px(a.x)} y1={py(a.y)} x2={px(b.x)} y2={py(b.y)}
-                  stroke={live ? 'rgba(255,180,84,0.5)' : 'rgba(232,228,218,0.12)'}
-                  strokeWidth={live ? 1.5 : 1}
+                  stroke={live ? (complete ? 'rgba(255,200,120,0.85)' : 'rgba(255,180,84,0.5)') : 'rgba(232,228,218,0.12)'}
+                  strokeWidth={live ? (complete ? 2 : 1.5) : 1}
                   strokeDasharray={live ? undefined : '2 6'}
                 />
               );
@@ -124,8 +131,38 @@ export function WorldMap() {
           </div>
         </div>
         <div className="label" style={{ textAlign: 'center' }}>
-          Select a darkened district to begin its restoration
+          {complete ? 'The city is whole — every district burns bright' : 'Select a darkened district to begin its restoration'}
         </div>
+      </div>
+
+      {showFinale && (
+        <CityFinale
+          onClose={() => {
+            audio.uiTick();
+            markFinaleSeen();
+            setShowFinale(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Full-screen closing sequence, the first time the whole city is restored. */
+function CityFinale({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="finale" role="dialog" aria-label="The city is whole">
+      <div className="finale-glow" />
+      <div className="finale-inner">
+        <div className="label" style={{ letterSpacing: '0.4em', color: 'var(--gold)' }}>Reclaimed</div>
+        <h1 className="wordmark finale-word">LUX</h1>
+        <p className="finale-line">
+          The dark is gone from the map. Every district you touched is awake, and the light moves between them
+          on its own now — the way it did before, the way it was always meant to.
+        </p>
+        <button className="btn primary" autoFocus onClick={onClose}>
+          Stay with the light
+        </button>
       </div>
     </div>
   );

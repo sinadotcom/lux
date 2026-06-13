@@ -3,7 +3,7 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import { evaluate } from '../game/board.ts';
 import { findHint } from '../game/solver.ts';
 import { dailyPuzzle, todayKey } from '../game/daily.ts';
-import { DISTRICT_BY_ID, districtPuzzle, INITIAL_DISTRICTS } from '../game/districts.ts';
+import { DISTRICTS, DISTRICT_BY_ID, districtPuzzle, INITIAL_DISTRICTS } from '../game/districts.ts';
 import type { Puzzle } from '../game/types.ts';
 
 export type Screen = 'title' | 'map' | 'play' | 'archive';
@@ -24,6 +24,8 @@ export interface Progress {
   totalCores: number;
   totalPowered: number;
   memories: string[];
+  /** Whether the city-restored finale has played once. */
+  finaleSeen: boolean;
 }
 
 export interface Settings {
@@ -57,6 +59,8 @@ export interface Session {
   /** Monotonic counter so effects can react to each placement. */
   moveSeq: number;
   hint: Hint | null;
+  /** Set when this solve restores the final district — drives the grand cinematic. */
+  grandFinale: boolean;
 }
 
 interface LuxState {
@@ -76,6 +80,7 @@ interface LuxState {
   requestHint: () => void;
   clearHint: () => void;
   finishCinematic: () => void;
+  markFinaleSeen: () => void;
   leaveSession: () => void;
   setCursor: (cell: number | null) => void;
   setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
@@ -91,6 +96,7 @@ const defaultProgress = (): Progress => ({
   totalCores: 0,
   totalPowered: 0,
   memories: [],
+  finaleSeen: false,
 });
 
 const defaultSettings = (): Settings => ({
@@ -162,6 +168,7 @@ export const useLux = create<LuxState>()(
           lastPlaced: null,
           moveSeq: 0,
           hint: null,
+          grandFinale: false,
         },
       });
     },
@@ -188,6 +195,7 @@ export const useLux = create<LuxState>()(
           lastPlaced: null,
           moveSeq: 0,
           hint: null,
+          grandFinale: false,
         },
       });
     },
@@ -237,6 +245,9 @@ export const useLux = create<LuxState>()(
           if (!progress.memories.includes(session.districtId)) {
             newProgress.memories = [...progress.memories, session.districtId];
           }
+          // Did this restore the final dark district? Mark the grand finale.
+          const allSolved = DISTRICTS.every((d) => newProgress.districts[d.id]?.solved);
+          if (allSolved && !progress.finaleSeen) next.grandFinale = true;
         } else if (session.mode === 'daily' && session.dailyKey) {
           if (!progress.dailies.includes(session.dailyKey)) {
             newProgress.dailies = [...progress.dailies, session.dailyKey];
@@ -294,6 +305,14 @@ export const useLux = create<LuxState>()(
       if (session?.phase === 'cinematic') set({ session: { ...session, phase: 'complete' } });
     },
 
+    markFinaleSeen: () => {
+      const { progress, settings } = get();
+      if (progress.finaleSeen) return;
+      const next = { ...progress, finaleSeen: true };
+      persist(next, settings);
+      set({ progress: next });
+    },
+
     leaveSession: () => set({ session: null, screen: 'map', cursor: null }),
 
     setCursor: (cursor) => set({ cursor }),
@@ -329,4 +348,9 @@ export function visibleDistricts(progress: Progress): Set<string> {
 export function completionPercent(progress: Progress): number {
   const solved = Object.values(progress.districts).filter((d) => d.solved).length;
   return Math.round((solved / DISTRICT_BY_ID.size) * 100);
+}
+
+/** True once every district has been restored. */
+export function cityComplete(progress: Progress): boolean {
+  return DISTRICTS.every((d) => progress.districts[d.id]?.solved);
 }

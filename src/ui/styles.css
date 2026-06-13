@@ -330,3 +330,66 @@ h2.district-name {
   30% { opacity: 1; transform: none; }
   100% { opacity: 1; }
 }
+
+/* City-restored finale overlay */
+.finale {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse 90% 70% at 50% 45%, rgba(26,17,9,0.85), rgba(7,7,8,0.97) 70%);
+  z-index: 20;
+  animation: finale-veil 2.4s ease both;
+}
+
+.finale-glow {
+  position: absolute;
+  width: 120vmin;
+  height: 120vmin;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,184,84,0.22), rgba(255,184,84,0) 60%);
+  animation: finale-breathe 7s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.finale-inner {
+  position: relative;
+  max-width: 540px;
+  padding: 0 32px;
+  text-align: center;
+  animation: finale-rise 3s ease both 0.5s;
+}
+
+.finale-word {
+  margin: 14px 0 22px 0.16em;
+  text-shadow: 0 0 40px rgba(255,184,84,0.45);
+}
+
+.finale-line {
+  font-size: 15px;
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--ivory-dim);
+  margin: 0 0 34px;
+}
+
+@keyframes finale-veil {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes finale-rise {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes finale-breathe {
+  0%, 100% { opacity: 0.6; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finale, .finale-inner { animation-duration: 0.01ms; }
+  .finale-glow { animation: none; }
+}

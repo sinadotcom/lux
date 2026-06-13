@@ -19,11 +19,14 @@ const MAX_ZOOM = 2.2;
 export function CameraRig({
   boardExtent,
   cinematic,
+  grand = false,
   onCinematicEnd,
   reducedMotion,
 }: {
   boardExtent: number;
   cinematic: boolean;
+  /** The city-completing solve gets a longer, higher hero revolution. */
+  grand?: boolean;
   onCinematicEnd: () => void;
   reducedMotion: boolean;
 }) {
@@ -113,12 +116,13 @@ export function CameraRig({
     let heroLift = 0;
     if (cinematic && !heroDone.current) {
       if (heroStart.current === null) heroStart.current = t;
-      const dur = reducedMotion ? 1.8 : 7;
+      const dur = reducedMotion ? 1.8 : grand ? 12 : 7;
       const u = Math.min(1, (t - heroStart.current) / dur);
       const eased = u * u * (3 - 2 * u);
       if (!reducedMotion) {
-        heroOffset = eased * Math.PI * 2;
-        heroLift = Math.sin(u * Math.PI) * boardExtent * 0.5;
+        // The grand finale makes two full turns and lifts higher above the city.
+        heroOffset = eased * Math.PI * 2 * (grand ? 2 : 1);
+        heroLift = Math.sin(u * Math.PI) * boardExtent * (grand ? 0.85 : 0.5);
       }
       if (u >= 1) {
         heroDone.current = true;

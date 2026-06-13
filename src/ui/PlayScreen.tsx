@@ -15,7 +15,9 @@ export function PlayScreen() {
       <Hud />
       {session.phase === 'cinematic' && (
         <div className="cinematic-caption">
-          <div className="label" style={{ color: 'var(--gold)', letterSpacing: '0.34em' }}>Power restored</div>
+          <div className="label" style={{ color: 'var(--gold)', letterSpacing: '0.34em' }}>
+            {session.grandFinale ? 'The last district answers' : 'Power restored'}
+          </div>
         </div>
       )}
       {session.phase === 'complete' && <CompletionCard />}
@@ -128,6 +130,24 @@ function CompletionCard() {
 
   const district = session.districtId ? DISTRICT_BY_ID.get(session.districtId) : null;
   const perfect = session.hintsUsed === 0 && session.undosUsed === 0;
+
+  if (session.grandFinale) {
+    return (
+      <div className="veil">
+        <div className="card">
+          <div className="label memory-kind" style={{ color: 'var(--gold)' }}>The city is whole</div>
+          <h3>Every street is lit</h3>
+          <p className="body">
+            The last district answers the grid, and the dark that held the city for so long finally lets go.
+            From the harbor to the hill, every window is warm. Step back and see what you brought back.
+          </p>
+          <button className="btn primary" autoFocus onClick={() => { audio.uiTick(); leaveSession(); }}>
+            See the city whole
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="veil">

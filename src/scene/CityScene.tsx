@@ -128,6 +128,7 @@ function SceneContent() {
       <CameraRig
         boardExtent={extent}
         cinematic={session.phase === 'cinematic'}
+        grand={session.grandFinale}
         onCinematicEnd={finishCinematic}
         reducedMotion={settings.reducedMotion}
       />
