@@ -4,36 +4,34 @@ import * as THREE from 'three';
 import { PALETTE } from './palette.ts';
 
 const NIGHT_BG = new THREE.Color('#070708');
-const WARM_BG = new THREE.Color('#0e0b08');
+const WARM_BG = new THREE.Color('#1a1109');
 const SKY_COLD = new THREE.Color('#3a3b3e');
-const SKY_WARM = new THREE.Color('#4d4133');
+const SKY_WARM = new THREE.Color('#7a5a32');
 const GROUND_COLD = new THREE.Color('#0a0a0b');
-const GROUND_WARM = new THREE.Color('#171006');
+const GROUND_WARM = new THREE.Color('#2c1c0a');
 
 /**
  * Tetris Effect-style environmental response: the whole void reacts to the
- * city's power level. The darkness warms, fireflies gather above the lit
- * streets, and every quarter of restoration sends a light wave across the
- * board.
+ * city's power level. The darkness warms toward amber dusk and fireflies
+ * gather above the lit streets.
  */
 export function Atmosphere({
   extent,
   energy,
   hemi,
   reducedParticles,
-  reducedMotion,
 }: {
   extent: number;
   energy: React.MutableRefObject<number>;
   hemi: React.RefObject<THREE.HemisphereLight>;
   reducedParticles: boolean;
-  reducedMotion: boolean;
 }) {
   const { scene } = useThree();
 
   // --- World warming: background, fog and ambient drift from cold to warm.
   useFrame(() => {
-    const e = energy.current;
+    // Ease the curve so the warming is clearly visible by mid-game.
+    const e = Math.pow(energy.current, 0.7);
     if (scene.background instanceof THREE.Color) {
       scene.background.copy(NIGHT_BG).lerp(WARM_BG, e);
       if (scene.fog) scene.fog.color.copy(scene.background);
@@ -42,16 +40,11 @@ export function Atmosphere({
     if (h) {
       h.color.copy(SKY_COLD).lerp(SKY_WARM, e);
       h.groundColor.copy(GROUND_COLD).lerp(GROUND_WARM, e);
-      h.intensity = 0.5 + e * 0.18;
+      h.intensity = 0.5 + e * 0.3;
     }
   });
 
-  return (
-    <group>
-      {!reducedParticles && <Embers extent={extent} energy={energy} />}
-      {!reducedMotion && <MilestoneWaves extent={extent} energy={energy} />}
-    </group>
-  );
+  return <group>{!reducedParticles && <Embers extent={extent} energy={energy} />}</group>;
 }
 
 /** Fireflies that gather over the city once it is properly waking (>30%). */
@@ -115,48 +108,5 @@ function Embers({ extent, energy }: { extent: number; energy: React.MutableRefOb
         blending={THREE.AdditiveBlending}
       />
     </points>
-  );
-}
-
-/** A ring of light sweeps the board each time restoration crosses a quarter. */
-function MilestoneWaves({ extent, energy }: { extent: number; energy: React.MutableRefObject<number> }) {
-  const ring = useRef<THREE.Mesh>(null);
-  const prev = useRef(0);
-  const waveStart = useRef<number | null>(null);
-
-  useFrame(({ clock }) => {
-    const e = energy.current;
-    const t = clock.elapsedTime;
-
-    for (const m of [0.25, 0.5, 0.75]) {
-      if (prev.current < m && e >= m) waveStart.current = t;
-    }
-    prev.current = e;
-
-    const r = ring.current;
-    if (!r) return;
-    if (waveStart.current === null) {
-      r.visible = false;
-      return;
-    }
-    const u = (t - waveStart.current) / 1.5;
-    if (u >= 1) {
-      waveStart.current = null;
-      r.visible = false;
-      return;
-    }
-    r.visible = true;
-    const s = 0.4 + u * extent * 1.9;
-    r.scale.set(s, s, s);
-    const mat = r.material as THREE.MeshBasicMaterial;
-    mat.color.copy(PALETTE.gold).multiplyScalar(1.6);
-    mat.opacity = (1 - u) * 0.55;
-  });
-
-  return (
-    <mesh ref={ring} position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
-      <ringGeometry args={[0.92, 1, 64]} />
-      <meshBasicMaterial transparent toneMapped={false} depthWrite={false} blending={THREE.AdditiveBlending} />
-    </mesh>
   );
 }

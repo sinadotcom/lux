@@ -123,13 +123,7 @@ function SceneContent() {
 
       <Plinth puzzle={puzzle} energy={energyRef} />
       <Dust extent={extent * 1.4} energy={energyRef} reduced={settings.reducedParticles} />
-      <Atmosphere
-        extent={extent}
-        energy={energyRef}
-        hemi={hemiRef}
-        reducedParticles={settings.reducedParticles}
-        reducedMotion={settings.reducedMotion}
-      />
+      <Atmosphere extent={extent} energy={energyRef} hemi={hemiRef} reducedParticles={settings.reducedParticles} />
 
       <CameraRig
         boardExtent={extent}
