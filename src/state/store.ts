@@ -6,7 +6,8 @@ import { dailyPuzzle, todayKey } from '../game/daily.ts';
 import { DISTRICTS, DISTRICT_BY_ID, districtPuzzle, INITIAL_DISTRICTS } from '../game/districts.ts';
 import type { Puzzle } from '../game/types.ts';
 
-export type Screen = 'title' | 'map' | 'play' | 'archive';
+export type Screen = 'title' | 'map' | 'play' | 'archive' | 'rules';
+export type Lang = 'en' | 'tr';
 export type Phase = 'playing' | 'cinematic' | 'complete';
 
 export interface DistrictProgress {
@@ -33,6 +34,7 @@ export interface Settings {
   reducedMotion: boolean;
   reducedParticles: boolean;
   colorblind: boolean;
+  lang: Lang;
 }
 
 export interface Hint {
@@ -104,6 +106,7 @@ const defaultSettings = (): Settings => ({
   reducedMotion: typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches,
   reducedParticles: false,
   colorblind: false,
+  lang: typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('tr') ? 'tr' : 'en',
 });
 
 function loadSave(): { progress: Progress; settings: Settings } {

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { audio } from '../audio/engine.ts';
 import { DISTRICTS, DISTRICT_BY_ID } from '../game/districts.ts';
+import { districtText } from '../game/districtText.ts';
 import { todayKey } from '../game/daily.ts';
+import { useT } from '../i18n.ts';
 import { cityComplete, completionPercent, useLux, visibleDistricts } from '../state/store.ts';
 
 const W = 1000;
@@ -22,6 +24,8 @@ export function WorldMap() {
   const startDaily = useLux((s) => s.startDaily);
   const setScreen = useLux((s) => s.setScreen);
   const markFinaleSeen = useLux((s) => s.markFinaleSeen);
+  const lang = useLux((s) => s.settings.lang);
+  const t = useT();
 
   const visible = visibleDistricts(progress);
   const pct = completionPercent(progress);
@@ -67,13 +71,14 @@ export function WorldMap() {
           const perfect = progress.districts[d.id]?.perfect ?? false;
           const x = px(d.map.x);
           const y = py(d.map.y);
+          const name = districtText(d, lang).name;
           return (
             <g
               key={d.id}
               className={`map-node ${solved ? 'solved' : ''}`}
               role="listitem"
               tabIndex={0}
-              aria-label={`${d.name}${solved ? ', restored' : ', dark'}`}
+              aria-label={name}
               onClick={() => {
                 audio.ensure();
                 audio.uiTick();
@@ -99,7 +104,7 @@ export function WorldMap() {
               {perfect && (
                 <circle cx={x} cy={y} r={14} fill="none" stroke="rgba(255,217,160,0.6)" strokeWidth={0.8} />
               )}
-              <text x={x} y={y + 30} textAnchor="middle">{d.name}</text>
+              <text x={x} y={y + 30} textAnchor="middle">{name}</text>
             </g>
           );
         })}
@@ -108,12 +113,12 @@ export function WorldMap() {
       <div className="map-overlay">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div className="label">The city</div>
+            <div className="label">{t('map.city')}</div>
             <div style={{ fontSize: 28, fontWeight: 200, letterSpacing: '0.1em', marginTop: 6 }}>
-              {pct}<span style={{ fontSize: 15, color: 'var(--ivory-dim)' }}> % restored</span>
+              {pct}<span style={{ fontSize: 15, color: 'var(--ivory-dim)' }}> % {t('map.restored')}</span>
             </div>
             {progress.streak > 1 && (
-              <div className="label" style={{ marginTop: 8 }}>{progress.streak}-day restoration streak</div>
+              <div className="label" style={{ marginTop: 8 }}>{t('map.streak', { n: progress.streak })}</div>
             )}
           </div>
           <div className="icon-row">
@@ -125,13 +130,14 @@ export function WorldMap() {
                 startDaily();
               }}
             >
-              {dailyDone ? 'Daily city · restored' : 'Daily city'}
+              {dailyDone ? t('map.dailyDone') : t('map.daily')}
             </button>
-            <button className="btn" onClick={() => { audio.uiTick(); setScreen('archive'); }}>Archive</button>
+            <button className="btn" onClick={() => { audio.uiTick(); setScreen('rules'); }}>{t('map.rules')}</button>
+            <button className="btn" onClick={() => { audio.uiTick(); setScreen('archive'); }}>{t('map.archive')}</button>
           </div>
         </div>
         <div className="label" style={{ textAlign: 'center' }}>
-          {complete ? 'The city is whole — every district burns bright' : 'Select a darkened district to begin its restoration'}
+          {complete ? t('map.whole') : t('map.prompt')}
         </div>
       </div>
 
@@ -150,18 +156,16 @@ export function WorldMap() {
 
 /** Full-screen closing sequence, the first time the whole city is restored. */
 function CityFinale({ onClose }: { onClose: () => void }) {
+  const t = useT();
   return (
-    <div className="finale" role="dialog" aria-label="The city is whole">
+    <div className="finale" role="dialog" aria-label={t('done.grandKicker')}>
       <div className="finale-glow" />
       <div className="finale-inner">
-        <div className="label" style={{ letterSpacing: '0.4em', color: 'var(--gold)' }}>Reclaimed</div>
+        <div className="label" style={{ letterSpacing: '0.4em', color: 'var(--gold)' }}>{t('finale.kicker')}</div>
         <h1 className="wordmark finale-word">LUX</h1>
-        <p className="finale-line">
-          The dark is gone from the map. Every district you touched is awake, and the light moves between them
-          on its own now — the way it did before, the way it was always meant to.
-        </p>
+        <p className="finale-line">{t('finale.line')}</p>
         <button className="btn primary" autoFocus onClick={onClose}>
-          Stay with the light
+          {t('finale.stay')}
         </button>
       </div>
     </div>

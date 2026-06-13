@@ -2,12 +2,15 @@ import { useEffect, useMemo } from 'react';
 import { audio } from '../audio/engine.ts';
 import { evaluate, idx, inBounds, xy } from '../game/board.ts';
 import { DISTRICT_BY_ID } from '../game/districts.ts';
+import { districtTextById } from '../game/districtText.ts';
 import { OPEN } from '../game/types.ts';
 import { CityScene } from '../scene/CityScene.tsx';
+import { useT } from '../i18n.ts';
 import { useLux } from '../state/store.ts';
 
 export function PlayScreen() {
   const session = useLux((s) => s.session);
+  const t = useT();
   if (!session) return null;
   return (
     <div className="screen" style={{ background: '#070708' }}>
@@ -16,7 +19,7 @@ export function PlayScreen() {
       {session.phase === 'cinematic' && (
         <div className="cinematic-caption">
           <div className="label" style={{ color: 'var(--gold)', letterSpacing: '0.34em' }}>
-            {session.grandFinale ? 'The last district answers' : 'Power restored'}
+            {session.grandFinale ? t('cine.last') : t('cine.restored')}
           </div>
         </div>
       )}
@@ -34,6 +37,12 @@ function Hud() {
   const cursor = useLux((s) => s.cursor);
   const setCursor = useLux((s) => s.setCursor);
   const toggleCore = useLux((s) => s.toggleCore);
+  const lang = useLux((s) => s.settings.lang);
+  const t = useT();
+
+  const localized = session.districtId ? districtTextById(session.districtId, lang) : null;
+  const displayName = localized ? localized.name : session.name;
+  const displayEpigraph = session.mode === 'daily' ? t('daily.epigraph') : localized ? localized.epigraph : session.epigraph;
 
   const ev = useMemo(() => evaluate(session.puzzle, new Set(session.cores)), [session.puzzle, session.cores]);
   const pct = ev.openCount ? Math.round((ev.litCount / ev.openCount) * 100) : 0;
@@ -92,31 +101,31 @@ function Hud() {
       <div className="hud-top">
         <div>
           <div className="label" style={{ marginBottom: 6 }}>
-            {session.mode === 'daily' ? 'Daily city' : 'District'}
+            {session.mode === 'daily' ? t('hud.daily') : t('hud.district')}
           </div>
-          <h2 className="district-name">{session.name}</h2>
-          <div className="epigraph" style={{ marginTop: 8, maxWidth: 300 }}>{session.epigraph}</div>
+          <h2 className="district-name">{displayName}</h2>
+          <div className="epigraph" style={{ marginTop: 8, maxWidth: 300 }}>{displayEpigraph}</div>
         </div>
         <div className="power-meter">
-          <div className="label" style={{ marginBottom: 4 }}>Power</div>
+          <div className="label" style={{ marginBottom: 4 }}>{t('hud.power')}</div>
           <div className="value">{pct}%</div>
           {ev.conflicted.size > 0 && (
-            <div className="label" style={{ color: '#9fb8d8', marginTop: 6 }}>Grid overload</div>
+            <div className="label" style={{ color: '#9fb8d8', marginTop: 6 }}>{t('hud.overload')}</div>
           )}
         </div>
       </div>
       <div className="hud-bottom">
         <button className="btn" disabled={session.history.length === 0} onClick={() => { audio.uiTick(); undo(); }}>
-          Undo
+          {t('hud.undo')}
         </button>
         <button className="btn" disabled={session.cores.length === 0} onClick={() => { audio.uiTick(); resetBoard(); }}>
-          Reset
+          {t('hud.reset')}
         </button>
         <button className="btn" onClick={() => requestHint()}>
-          Survey{session.hintsUsed > 0 ? ` · ${session.hintsUsed}` : ''}
+          {t('hud.survey')}{session.hintsUsed > 0 ? ` · ${session.hintsUsed}` : ''}
         </button>
         <button className="btn" onClick={() => { audio.uiTick(); leaveSession(); }}>
-          City map
+          {t('hud.map')}
         </button>
       </div>
     </div>
@@ -127,22 +136,22 @@ function CompletionCard() {
   const session = useLux((s) => s.session)!;
   const progress = useLux((s) => s.progress);
   const leaveSession = useLux((s) => s.leaveSession);
+  const lang = useLux((s) => s.settings.lang);
+  const t = useT();
 
   const district = session.districtId ? DISTRICT_BY_ID.get(session.districtId) : null;
+  const text = session.districtId ? districtTextById(session.districtId, lang) : null;
   const perfect = session.hintsUsed === 0 && session.undosUsed === 0;
 
   if (session.grandFinale) {
     return (
       <div className="veil">
         <div className="card">
-          <div className="label memory-kind" style={{ color: 'var(--gold)' }}>The city is whole</div>
-          <h3>Every street is lit</h3>
-          <p className="body">
-            The last district answers the grid, and the dark that held the city for so long finally lets go.
-            From the harbor to the hill, every window is warm. Step back and see what you brought back.
-          </p>
+          <div className="label memory-kind" style={{ color: 'var(--gold)' }}>{t('done.grandKicker')}</div>
+          <h3>{t('done.grandTitle')}</h3>
+          <p className="body">{t('done.grandBody')}</p>
           <button className="btn primary" autoFocus onClick={() => { audio.uiTick(); leaveSession(); }}>
-            See the city whole
+            {t('done.grandBtn')}
           </button>
         </div>
       </div>
@@ -153,22 +162,24 @@ function CompletionCard() {
     <div className="veil">
       <div className="card">
         <div className="label memory-kind">
-          {district ? `Memory recovered · ${district.memory.kind}` : 'Daily city restored'}
+          {district ? t('done.memory', { kind: t(`kind.${district.memory.kind}`) }) : t('done.daily')}
         </div>
-        <h3>{district ? district.memory.title : `${session.name} hums back to life`}</h3>
+        <h3>{text ? text.memory.title : t('done.dailyTitle', { name: session.name })}</h3>
         <p className="body">
-          {district
-            ? district.memory.body
-            : `The grid holds. ${progress.streak > 1 ? `${progress.streak} days of light, unbroken.` : 'Come back tomorrow — another district will be waiting.'}`}
+          {text
+            ? text.memory.body
+            : progress.streak > 1
+              ? t('done.dailyStreak', { n: progress.streak })
+              : t('done.dailyFirst')}
         </p>
         {perfect && (
           <>
             <div className="divider" />
-            <div className="label" style={{ color: 'var(--gold)', marginBottom: 22 }}>Flawless restoration</div>
+            <div className="label" style={{ color: 'var(--gold)', marginBottom: 22 }}>{t('done.flawless')}</div>
           </>
         )}
         <button className="btn primary" autoFocus onClick={() => { audio.uiTick(); leaveSession(); }}>
-          Return to the city
+          {t('done.return')}
         </button>
       </div>
     </div>

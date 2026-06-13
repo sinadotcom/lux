@@ -3,6 +3,7 @@ import { audio } from './audio/engine.ts';
 import { useLux } from './state/store.ts';
 import { Archive } from './ui/Archive.tsx';
 import { PlayScreen } from './ui/PlayScreen.tsx';
+import { Rules } from './ui/Rules.tsx';
 import { Title } from './ui/Title.tsx';
 import { WorldMap } from './ui/WorldMap.tsx';
 import './ui/styles.css';
@@ -54,6 +55,8 @@ export default function App() {
       return <WorldMap />;
     case 'archive':
       return <Archive />;
+    case 'rules':
+      return <Rules />;
     case 'play':
       return <PlayScreen />;
   }
