@@ -72,6 +72,7 @@ interface LuxState {
   startDaily: () => void;
   toggleCore: (cell: number) => void;
   undo: () => void;
+  resetBoard: () => void;
   requestHint: () => void;
   clearHint: () => void;
   finishCinematic: () => void;
@@ -258,6 +259,21 @@ export const useLux = create<LuxState>()(
       const cores = history.pop()!;
       set({
         session: { ...session, cores, history, undosUsed: session.undosUsed + 1, lastPlaced: null, hint: null, moveSeq: session.moveSeq + 1 },
+      });
+    },
+
+    resetBoard: () => {
+      const { session } = get();
+      if (!session || session.phase !== 'playing' || session.cores.length === 0) return;
+      set({
+        session: {
+          ...session,
+          cores: [],
+          history: [...session.history, session.cores],
+          lastPlaced: null,
+          hint: null,
+          moveSeq: session.moveSeq + 1,
+        },
       });
     },
 

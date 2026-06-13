@@ -26,6 +26,7 @@ export function PlayScreen() {
 function Hud() {
   const session = useLux((s) => s.session)!;
   const undo = useLux((s) => s.undo);
+  const resetBoard = useLux((s) => s.resetBoard);
   const requestHint = useLux((s) => s.requestHint);
   const leaveSession = useLux((s) => s.leaveSession);
   const cursor = useLux((s) => s.cursor);
@@ -74,6 +75,7 @@ function Hud() {
           }
           break;
         case 'u': case 'U': undo(); break;
+        case 'r': case 'R': resetBoard(); break;
         case 'h': case 'H': requestHint(); break;
         default: return;
       }
@@ -81,7 +83,7 @@ function Hud() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [session.puzzle, cursor, playing, setCursor, toggleCore, undo, requestHint, leaveSession]);
+  }, [session.puzzle, cursor, playing, setCursor, toggleCore, undo, resetBoard, requestHint, leaveSession]);
 
   return (
     <div className={`hud ${playing ? '' : 'hidden'}`}>
@@ -104,6 +106,9 @@ function Hud() {
       <div className="hud-bottom">
         <button className="btn" disabled={session.history.length === 0} onClick={() => { audio.uiTick(); undo(); }}>
           Undo
+        </button>
+        <button className="btn" disabled={session.cores.length === 0} onClick={() => { audio.uiTick(); resetBoard(); }}>
+          Reset
         </button>
         <button className="btn" onClick={() => requestHint()}>
           Survey{session.hintsUsed > 0 ? ` · ${session.hintsUsed}` : ''}
