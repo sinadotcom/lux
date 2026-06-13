@@ -135,7 +135,7 @@ function SceneContent() {
 
       {!settings.reducedParticles && (
         <EffectComposer>
-          <Bloom mipmapBlur intensity={1.25} luminanceThreshold={0.45} luminanceSmoothing={0.35} />
+          <Bloom mipmapBlur intensity={0.85} luminanceThreshold={0.62} luminanceSmoothing={0.3} />
           <Vignette eskil={false} offset={0.18} darkness={0.78} />
         </EffectComposer>
       )}
@@ -147,7 +147,7 @@ function SceneContent() {
 function WarmFill({ energy, extent }: { energy: React.MutableRefObject<number>; extent: number }) {
   const ref = useRef<THREE.PointLight>(null);
   useFrame(() => {
-    if (ref.current) ref.current.intensity = 0.2 + energy.current * 2.4;
+    if (ref.current) ref.current.intensity = 0.2 + energy.current * 1.5;
   });
   return <pointLight ref={ref} position={[0, extent * 0.9, 0]} color={PALETTE.amber} distance={extent * 5} decay={1.6} />;
 }

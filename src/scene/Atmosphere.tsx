@@ -4,11 +4,11 @@ import * as THREE from 'three';
 import { PALETTE } from './palette.ts';
 
 const NIGHT_BG = new THREE.Color('#070708');
-const WARM_BG = new THREE.Color('#1a1109');
+const WARM_BG = new THREE.Color('#130d08');
 const SKY_COLD = new THREE.Color('#3a3b3e');
-const SKY_WARM = new THREE.Color('#7a5a32');
+const SKY_WARM = new THREE.Color('#5c472b');
 const GROUND_COLD = new THREE.Color('#0a0a0b');
-const GROUND_WARM = new THREE.Color('#2c1c0a');
+const GROUND_WARM = new THREE.Color('#1d1409');
 
 /**
  * Tetris Effect-style environmental response: the whole void reacts to the
@@ -40,7 +40,7 @@ export function Atmosphere({
     if (h) {
       h.color.copy(SKY_COLD).lerp(SKY_WARM, e);
       h.groundColor.copy(GROUND_COLD).lerp(GROUND_WARM, e);
-      h.intensity = 0.5 + e * 0.3;
+      h.intensity = 0.5 + e * 0.18;
     }
   });
 
