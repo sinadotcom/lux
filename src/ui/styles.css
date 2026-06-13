@@ -223,10 +223,14 @@ h2.district-name {
 .map-node { cursor: pointer; }
 .map-node text {
   font-family: var(--font);
-  font-size: 11px;
-  letter-spacing: 0.18em;
+  font-size: 10px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   fill: var(--ivory-dim);
+  paint-order: stroke;
+  stroke: #070708;
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
 .map-node.solved text { fill: var(--ivory); }
 .map-node:hover text { fill: var(--gold); }
