@@ -20,11 +20,11 @@ jobs:
       - run: npm ci
       - name: Build web bundle for Electron
         run: npm run build:electron
-      - name: Package macOS app (unsigned)
+      - name: Package macOS app (ad-hoc signed)
+        # Ad-hoc signing (identity "-") so the app launches on Apple Silicon
+        # after the user clears quarantine; not notarized, so first open still
+        # needs right-click → Open (or: xattr -cr /Applications/LUX.app).
         run: npx electron-builder --mac --publish never
-        env:
-          # Skip code-signing: produces an unsigned .dmg/.app artifact.
-          CSC_IDENTITY_AUTO_DISCOVERY: false
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
