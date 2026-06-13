@@ -259,8 +259,29 @@ h2.district-name {
   margin-top: 32px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 26px;
   max-width: 640px;
+}
+.rule-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.rule-figure {
+  flex: 0 0 auto;
+  display: block;
+}
+.rule-text { flex: 1 1 auto; }
+.rd-num {
+  fill: #ffd9a0;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+}
+.rd-x {
+  fill: rgba(232, 228, 218, 0.55);
+  font-family: var(--font);
+  font-size: 12px;
 }
 .rule-row h4 {
   margin: 0 0 6px;
