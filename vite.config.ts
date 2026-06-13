@@ -2,7 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  base: '/lux/',
+  // Web (GitHub Pages) serves under /lux/; the Electron build sets LUX_BASE=./
+  // so assets resolve over file://.
+  base: process.env.LUX_BASE ?? '/lux/',
   plugins: [react()],
   build: {
     chunkSizeWarningLimit: 1500,
