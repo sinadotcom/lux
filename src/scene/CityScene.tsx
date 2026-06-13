@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
@@ -97,8 +97,8 @@ function SceneContent() {
       />
       {/* Soft rim light from behind — separates silhouettes from the dark */}
       <directionalLight position={[-6, 4, -7]} intensity={0.22} color="#5a5e68" />
-      {/* One warm fill that swells with restoration */}
-      <WarmFill energy={energyRef} extent={extent} />
+      {/* One warm fill that swells with restoration — tinted by the district */}
+      <WarmFill energy={energyRef} extent={extent} hue={session.hue} />
 
       <Tiles
         puzzle={puzzle}
@@ -143,13 +143,20 @@ function SceneContent() {
   );
 }
 
-/** Warm point light hovering over the board, swelling as power returns. */
-function WarmFill({ energy, extent }: { energy: React.MutableRefObject<number>; extent: number }) {
+/** Warm point light hovering over the board, swelling as power returns.
+ *  Its colour is the district's own hue, so each district awakens to a
+ *  slightly different warmth — from ember-orange to honey-gold. */
+function WarmFill({ energy, extent, hue }: { energy: React.MutableRefObject<number>; extent: number; hue: number }) {
   const ref = useRef<THREE.PointLight>(null);
+  // Widen the authored hue band (~0.06–0.12) into a more legible range.
+  const color = useMemo(() => {
+    const h = THREE.MathUtils.clamp((hue - 0.06) / 0.06, 0, 1); // 0..1 across districts
+    return new THREE.Color().setHSL(0.045 + h * 0.06, 0.85, 0.6); // ember → gold
+  }, [hue]);
   useFrame(() => {
     if (ref.current) ref.current.intensity = 0.2 + energy.current * 1.5;
   });
-  return <pointLight ref={ref} position={[0, extent * 0.9, 0]} color={PALETTE.amber} distance={extent * 5} decay={1.6} />;
+  return <pointLight ref={ref} position={[0, extent * 0.9, 0]} color={color} distance={extent * 5} decay={1.6} />;
 }
 
 /** The concrete slab the district rests on — the diorama base from the moodboard. */

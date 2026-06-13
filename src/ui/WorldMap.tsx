@@ -69,6 +69,7 @@ export function WorldMap() {
         {DISTRICTS.filter((d) => visible.has(d.id)).map((d) => {
           const solved = progress.districts[d.id]?.solved ?? false;
           const perfect = progress.districts[d.id]?.perfect ?? false;
+          const inProgress = !solved && (progress.inProgress[`d:${d.id}`]?.length ?? 0) > 0;
           const x = px(d.map.x);
           const y = py(d.map.y);
           const name = districtText(d, lang).name;
@@ -101,6 +102,9 @@ export function WorldMap() {
                 strokeWidth={1.2}
               />
               {!solved && <circle cx={x} cy={y} r={3} fill="rgba(232,228,218,0.4)" />}
+              {inProgress && (
+                <circle cx={x} cy={y} r={13} fill="none" stroke="rgba(255,180,84,0.7)" strokeWidth={1} strokeDasharray="2 4" />
+              )}
               {perfect && (
                 <circle cx={x} cy={y} r={14} fill="none" stroke="rgba(255,217,160,0.6)" strokeWidth={0.8} />
               )}

@@ -27,6 +27,8 @@ export interface Progress {
   memories: string[];
   /** Whether the city-restored finale has played once. */
   finaleSeen: boolean;
+  /** Saved cores for puzzles left mid-solve, keyed by d:<id> or daily:<key>. */
+  inProgress: Record<string, number[]>;
 }
 
 export interface Settings {
@@ -99,6 +101,7 @@ const defaultProgress = (): Progress => ({
   totalPowered: 0,
   memories: [],
   finaleSeen: false,
+  inProgress: {},
 });
 
 const defaultSettings = (): Settings => ({
@@ -133,6 +136,11 @@ function persist(progress: Progress, settings: Settings) {
   }
 }
 
+/** localStorage key under which a mid-solve board is saved. */
+function sessionKey(s: { mode: 'district' | 'daily'; districtId: string | null; dailyKey: string | null }): string {
+  return s.mode === 'district' ? `d:${s.districtId}` : `daily:${s.dailyKey}`;
+}
+
 function isYesterday(prevKey: string, nowKey: string): boolean {
   const prev = new Date(`${prevKey}T12:00:00`);
   prev.setDate(prev.getDate() + 1);
@@ -151,6 +159,8 @@ export const useLux = create<LuxState>()(
     startDistrict: (id) => {
       const d = DISTRICT_BY_ID.get(id);
       if (!d) return;
+      const { progress } = get();
+      const saved = progress.inProgress[`d:${id}`] ?? [];
       set({
         screen: 'play',
         cursor: null,
@@ -162,7 +172,7 @@ export const useLux = create<LuxState>()(
           epigraph: d.epigraph,
           hue: d.hue,
           puzzle: districtPuzzle(id),
-          cores: [],
+          cores: saved,
           history: [],
           hintsUsed: 0,
           undosUsed: 0,
@@ -178,6 +188,8 @@ export const useLux = create<LuxState>()(
 
     startDaily: () => {
       const { key, name, puzzle } = dailyPuzzle();
+      const { progress } = get();
+      const saved = progress.inProgress[`daily:${key}`] ?? [];
       set({
         screen: 'play',
         cursor: null,
@@ -189,7 +201,7 @@ export const useLux = create<LuxState>()(
           epigraph: 'Today the grid asks for this district by name.',
           hue: 0.095,
           puzzle,
-          cores: [],
+          cores: saved,
           history: [],
           hintsUsed: 0,
           undosUsed: 0,
@@ -225,13 +237,17 @@ export const useLux = create<LuxState>()(
         hint: null,
       };
 
+      const key = sessionKey(session);
       const ev = evaluate(session.puzzle, new Set(cores));
       if (ev.solved) {
         next.phase = 'cinematic';
         const elapsed = Date.now() - session.startedAt;
         const perfect = session.hintsUsed === 0 && session.undosUsed === 0;
+        // Clear the saved mid-solve board for this puzzle.
+        const { [key]: _done, ...restInProgress } = progress.inProgress;
         const newProgress: Progress = {
           ...progress,
+          inProgress: restInProgress,
           totalCores: progress.totalCores + cores.length,
           totalPowered: progress.totalPowered + ev.openCount,
         };
@@ -263,22 +279,33 @@ export const useLux = create<LuxState>()(
         set({ session: next, progress: newProgress });
         return;
       }
-      set({ session: next });
+      // Save the in-progress board so leaving and returning resumes it.
+      const savedProgress: Progress = { ...progress, inProgress: { ...progress.inProgress, [key]: cores } };
+      persist(savedProgress, settings);
+      set({ session: next, progress: savedProgress });
     },
 
     undo: () => {
-      const { session } = get();
+      const { session, progress, settings } = get();
       if (!session || session.phase !== 'playing' || session.history.length === 0) return;
       const history = session.history.slice();
       const cores = history.pop()!;
+      const savedProgress: Progress = {
+        ...progress,
+        inProgress: { ...progress.inProgress, [sessionKey(session)]: cores },
+      };
+      persist(savedProgress, settings);
       set({
         session: { ...session, cores, history, undosUsed: session.undosUsed + 1, lastPlaced: null, hint: null, moveSeq: session.moveSeq + 1 },
+        progress: savedProgress,
       });
     },
 
     resetBoard: () => {
-      const { session } = get();
+      const { session, progress, settings } = get();
       if (!session || session.phase !== 'playing' || session.cores.length === 0) return;
+      const savedProgress: Progress = { ...progress, inProgress: { ...progress.inProgress, [sessionKey(session)]: [] } };
+      persist(savedProgress, settings);
       set({
         session: {
           ...session,
@@ -288,6 +315,7 @@ export const useLux = create<LuxState>()(
           hint: null,
           moveSeq: session.moveSeq + 1,
         },
+        progress: savedProgress,
       });
     },
 

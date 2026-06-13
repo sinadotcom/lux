@@ -1,8 +1,16 @@
 import { audio } from '../audio/engine.ts';
+import { ACHIEVEMENTS, earnedCount } from '../game/achievements.ts';
 import { DISTRICTS } from '../game/districts.ts';
 import { districtText } from '../game/districtText.ts';
 import { useT } from '../i18n.ts';
 import { completionPercent, useLux, type Lang } from '../state/store.ts';
+
+function formatTime(ms: number): string {
+  const total = Math.round(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
 type BoolKey = 'audio' | 'reducedMotion' | 'reducedParticles' | 'colorblind';
 
@@ -58,13 +66,35 @@ export function Archive() {
         <Stat value={String(progress.streak)} label={t('arch.statStreak')} />
       </div>
 
-      <div className="label" style={{ marginBottom: 16 }}>{t('arch.memories')}</div>
+      <div className="label" style={{ marginBottom: 16 }}>
+        {t('arch.achievements')} · {t('arch.achievementsCount', { n: earnedCount(progress), total: ACHIEVEMENTS.length })}
+      </div>
+      <div className="ach-grid">
+        {ACHIEVEMENTS.map((a) => {
+          const earned = a.earned(progress);
+          return (
+            <div key={a.id} className={`ach ${earned ? 'earned' : 'locked'}`}>
+              <div className="ach-mark" aria-hidden="true">{earned ? '◆' : '◇'}</div>
+              <div>
+                <div className="ach-title">{t(`ach.${a.id}.t`)}</div>
+                <div className="label ach-desc">{t(`ach.${a.id}.d`)}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="label" style={{ margin: '40px 0 16px' }}>{t('arch.memories')}</div>
       {DISTRICTS.map((d) => {
         const has = progress.memories.includes(d.id);
         const text = districtText(d, lang);
+        const best = progress.districts[d.id]?.bestTimeMs;
         return (
           <div key={d.id} className={`memory-row ${has ? '' : 'locked'}`}>
-            <div className="label">{text.name}{has ? ` · ${t(`kind.${d.memory.kind}`)}` : ''}</div>
+            <div className="label">
+              {text.name}{has ? ` · ${t(`kind.${d.memory.kind}`)}` : ''}
+              {has && best != null ? ` · ${t('arch.bestTime', { time: formatTime(best) })}` : ''}
+            </div>
             <h4>{has ? text.memory.title : t('arch.stillDark')}</h4>
             <p>{has ? text.memory.body : t('arch.lockedBody')}</p>
           </div>

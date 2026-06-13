@@ -254,7 +254,6 @@ h2.district-name {
 }
 
 /* ---------- Rules ---------- */
-
 .rules-list {
   margin-top: 32px;
   display: flex;
@@ -363,6 +362,32 @@ h2.district-name {
   margin-bottom: 14px;
   background: rgba(21, 23, 28, 0.6);
 }
+
+/* Achievements */
+.ach-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 48px;
+}
+.ach {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(21, 23, 28, 0.6);
+}
+.ach.locked { opacity: 0.4; }
+.ach-mark {
+  font-size: 18px;
+  line-height: 1.3;
+  color: var(--gold);
+}
+.ach.locked .ach-mark { color: var(--ivory-dim); }
+.ach-title { font-size: 14px; font-weight: 500; color: var(--ivory); }
+.ach-desc { margin-top: 4px; text-transform: none; letter-spacing: 0.03em; }
 
 .memory-row.locked { opacity: 0.45; }
 .memory-row h4 {
