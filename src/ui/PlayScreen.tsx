@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { audio } from '../audio/engine.ts';
 import { evaluate, idx, inBounds, xy } from '../game/board.ts';
 import { DISTRICT_BY_ID } from '../game/districts.ts';
@@ -7,6 +7,7 @@ import { OPEN } from '../game/types.ts';
 import { CityScene } from '../scene/CityScene.tsx';
 import { useT } from '../i18n.ts';
 import { useLux } from '../state/store.ts';
+import { RulesOverlay } from './Rules.tsx';
 
 export function PlayScreen() {
   const session = useLux((s) => s.session);
@@ -39,6 +40,7 @@ function Hud() {
   const toggleCore = useLux((s) => s.toggleCore);
   const lang = useLux((s) => s.settings.lang);
   const t = useT();
+  const [showRules, setShowRules] = useState(false);
 
   const localized = session.districtId ? districtTextById(session.districtId, lang) : null;
   const displayName = localized ? localized.name : session.name;
@@ -124,10 +126,14 @@ function Hud() {
         <button className="btn" onClick={() => requestHint()}>
           {t('hud.survey')}{session.hintsUsed > 0 ? ` · ${session.hintsUsed}` : ''}
         </button>
+        <button className="btn" onClick={() => { audio.uiTick(); setShowRules(true); }}>
+          {t('rules.title')}
+        </button>
         <button className="btn" onClick={() => { audio.uiTick(); leaveSession(); }}>
           {t('hud.map')}
         </button>
       </div>
+      {showRules && <RulesOverlay onClose={() => { audio.uiTick(); setShowRules(false); }} />}
     </div>
   );
 }

@@ -1,12 +1,25 @@
 import { audio } from '../audio/engine.ts';
 import { useT } from '../i18n.ts';
-import { useLux } from '../state/store.ts';
+import { useLux, type Lang } from '../state/store.ts';
 
 export function Title() {
   const setScreen = useLux((s) => s.setScreen);
+  const setSetting = useLux((s) => s.setSetting);
+  const lang = useLux((s) => s.settings.lang);
   const t = useT();
   return (
     <div className="screen title-screen">
+      <div className="lang-seg title-lang">
+        {(['en', 'tr'] as Lang[]).map((l) => (
+          <button
+            key={l}
+            className={`lang-opt ${lang === l ? 'active' : ''}`}
+            onClick={() => { audio.uiTick(); setSetting('lang', l); }}
+          >
+            {l === 'en' ? 'EN' : 'TR'}
+          </button>
+        ))}
+      </div>
       <div className="label" style={{ marginBottom: 18 }}>{t('title.tag')}</div>
       <h1 className="wordmark">LUX</h1>
       <div className="label" style={{ marginBottom: 56 }}>{t('title.sub')}</div>

@@ -300,6 +300,20 @@ h2.district-name {
   color: #1a1206;
 }
 
+.title-lang {
+  position: absolute;
+  top: max(20px, env(safe-area-inset-top));
+  right: 24px;
+}
+
+/* In-game rules modal: scrollable card */
+.rules-card {
+  max-height: 80vh;
+  overflow-y: auto;
+  text-align: left;
+}
+.rules-card .rules-list { margin-top: 18px; }
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
