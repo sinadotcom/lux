@@ -1,4 +1,5 @@
 name: Build LUX for macOS
+# Rebuild trigger: includes resume, achievements/stats and per-district hue.
 
 on:
   workflow_dispatch:
